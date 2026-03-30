@@ -3,7 +3,7 @@
 Este é o frontend da plataforma VAX, construído com React, TypeScript, Tailwind CSS e Vite. 
 Integrado com o backend em `https://vax-backend.vercel.app/`.
 
-## 🚀 Como Executar Localmente
+## Como Executar Localmente
 
 1. Instale as dependências:
    ```bash
@@ -14,7 +14,7 @@ Integrado com o backend em `https://vax-backend.vercel.app/`.
    npm run dev
    ```
 
-## 🛠️ Tecnologias Principais
+## Tecnologias Principais
 - **React 18** + **Vite**
 - **Tailwind CSS** (Estilização)
 - **Lucide React** (Ícones)
@@ -22,7 +22,7 @@ Integrado com o backend em `https://vax-backend.vercel.app/`.
 - **Axios** (Comunicação com API)
 - **Supabase SDK** (Upload de Imagens para Storage)
 
-## 📦 Deploy no Vercel
+## Deploy no Vercel
 
 1. Suba este código para um repositório no **GitHub**.
 2. No dashboard da **Vercel**, importe o repositório.
