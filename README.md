@@ -27,6 +27,3 @@ Integrado com o backend em `https://vax-backend.vercel.app/`.
 1. Suba este código para um repositório no **GitHub**.
 2. No dashboard da **Vercel**, importe o repositório.
 3. Clique em **Deploy**. (As variáveis de ambiente do Supabase já estão configuradas no código para o demo, mas para produção recomenda-se usar `.env`).
-
----
-Desenvolvido com ❤️ por Antigravity.
