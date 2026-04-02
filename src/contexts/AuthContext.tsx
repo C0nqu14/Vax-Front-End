@@ -29,6 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const token = localStorage.getItem('vax_token');
 
       if (!userStr || !token) {
+        console.log("Auth: No user or token in localStorage");
         setLoading(false);
         return;
       }

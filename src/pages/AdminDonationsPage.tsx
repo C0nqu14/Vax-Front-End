@@ -12,6 +12,7 @@ import {
   Loader2
 } from "lucide-react";
 import api from "../services/api";
+import { supabase } from "../services/supabase";
 import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -25,12 +26,42 @@ export const AdminDonationsPage = () => {
     const fetchDonations = async () => {
       try {
         setLoading(true);
-        // GET /admin/doacoes -> Sincronizado com a tabela financiamento SQL
-        // Espera-se: id, valor, estado_pagamento, data_criacao, usuarios (nome), campanhas (titulo)
-        const response = await api.get("/admin/doacoes");
-        setDoacoes(response.data || []);
+        
+        // Busca relacional direta no Supabase para pegar TUDO (Histórico Financeiro completo)
+        // Puxamos os dados das tabelas relacionadas 'usuarios' e 'campanhas' via Join
+        const { data, error } = await supabase
+          .from("financiamento")
+          .select(`
+            *,
+            usuarios (
+              nome_completo,
+              nif,
+              email
+            ),
+            campanhas (
+              titulo
+            )
+          `)
+          .order("data_criacao", { ascending: false });
+
+        if (error) throw error;
+
+        // Mapeamento para manter compatibilidade com o seu layout original
+        const doacoesFormatadas = (data || []).map((f: any) => ({
+          ...f,
+          usuarios: { 
+            nome_completo: f.usuarios?.nome_completo || 'Anônimo' 
+          },
+          campanhas: { 
+            titulo: f.campanhas?.titulo || 'Causa Social' 
+          },
+          id_transacao: f.id_transacao || f.id
+        }));
+
+        setDoacoes(doacoesFormatadas);
       } catch (err) {
-        console.error("Erro ao carregar fluxo financeiro");
+        console.error("Erro ao carregar fluxo financeiro:", err);
+        setDoacoes([]);
       } finally {
         setLoading(false);
       }
@@ -38,8 +69,9 @@ export const AdminDonationsPage = () => {
     fetchDonations();
   }, []);
 
-  const totalVolume = (doacoes || []).reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0);
-  const avgDonation = doacoes.length > 0 ? totalVolume / doacoes.length : 0;
+  const concludedDonations = (doacoes || []).filter(d => d.estado_pagamento === 'concluido' || d.status === 'Sucesso');
+  const totalVolume = concludedDonations.reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0);
+  const avgDonation = concludedDonations.length > 0 ? totalVolume / concludedDonations.length : 0;
 
   const filteredDoacoes = doacoes.filter(d => 
     (d.usuarios?.nome_completo?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
@@ -47,16 +79,51 @@ export const AdminDonationsPage = () => {
     (d.id_transacao || "").includes(searchTerm)
   );
 
+  const gerarCsvDoacoes = () => {
+    const headers = [
+      "ID Transação",
+      "Doador",
+      "Campanha",
+      "Valor (KZ)",
+      "Estado",
+      "Data"
+    ];
+
+    const csvData = filteredDoacoes.map(d => [
+      d.id_transacao || d.id?.split('-')[0] || "",
+      d.usuarios?.nome_completo || "Anônimo",
+      d.campanhas?.titulo || "Causa Social",
+      Number(d.valor) || 0,
+      d.estado_pagamento || "Pendente",
+      d.data_criacao ? new Date(d.data_criacao).toLocaleDateString('pt-BR') : ""
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `livro_razao_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-12 animate-in fade-in duration-700 pb-24 mt-10">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-10 border-b border-vax-border pb-10">
         <div className="space-y-4">
           <Badge className="bg-vax-success-light text-vax-success-DEFAULT border-none px-5 py-2 font-black tracking-widest text-[10px] uppercase shadow-sm">Fluxo de Auditoria Financeira</Badge>
-          <h1 className="text-6xl font-bold text-vax-primary tracking-tighter leading-none">Movimentação Real</h1>
+          <h1 className="text-6xl font-bold text-vax-primary tracking-tighter leading-none">Movimentação</h1>
           <p className="text-slate-500 font-medium text-xl leading-relaxed max-w-xl">Monitoramento técnico de doações e conciliação bancária.</p>
         </div>
         <div className="flex gap-4">
-           <Button variant="outline" className="bg-white border-vax-border shadow-xl h-14 px-8 rounded-full font-black text-xs uppercase tracking-widest" leftIcon={<Download className="w-5 h-5" />}>
+           <Button onClick={gerarCsvDoacoes} variant="outline" className="bg-white border-vax-border shadow-xl h-14 px-8 rounded-full font-black text-xs uppercase tracking-widest" leftIcon={<Download className="w-5 h-5" />}>
               Exportar Livro Razão
            </Button>
         </div>
@@ -66,7 +133,7 @@ export const AdminDonationsPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
          <StatCard label="Volume Bruto Auditado" value={`${totalVolume.toLocaleString()} KZ`} icon={<TrendingUp className="w-6 h-6 text-vax-success-DEFAULT" />} />
          <StatCard label="Ticket Médio Mobilizado" value={`${Math.round(avgDonation).toLocaleString()} AKZ`} icon={<HistoryIcon className="w-6 h-6 text-vax-primary" />} />
-         <StatCard label="Transações Confirmadas" value={doacoes.filter(d => d.estado_pagamento === 'concluido').length.toString()} icon={<CheckCircle2 className="w-6 h-6 text-vax-success-DEFAULT" />} />
+         <StatCard label="Transações Confirmadas" value={concludedDonations.length.toString()} icon={<CheckCircle2 className="w-6 h-6 text-vax-success-DEFAULT" />} />
       </div>
 
       <div className="space-y-8">
@@ -122,7 +189,7 @@ export const AdminDonationsPage = () => {
                          <span className="text-sm font-bold text-slate-500 tracking-tight">{d.campanhas?.titulo || "Causa Social"}</span>
                       </td>
                       <td className="px-10 py-8 font-black text-vax-primary text-xl text-center tabular-nums leading-none">
-                         {Number(d.valor).toLocaleString()} <span className="text-xs font-medium text-slate-300">AKZ</span>
+                         {Number(d.valor).toLocaleString()} <span className="text-xs font-medium text-slate-300">KZ</span>
                       </td>
                       <td className="px-10 py-8 text-right">
                          <Badge 
@@ -150,7 +217,7 @@ export const AdminDonationsPage = () => {
             </table>
           </div>
           <div className="px-10 py-8 bg-vax-input/30 flex justify-between items-center border-t border-vax-border">
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-60">Sincronização em tempo real com PaysGator Gateway</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-60">Sincronização em tempo real com PaysGator Gateway</span>
           </div>
         </Card>
       </div>

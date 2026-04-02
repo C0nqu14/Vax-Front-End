@@ -29,7 +29,7 @@ export const CreateCampaignPage = () => {
   const [dataFim, setDataFim] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
-  const [categoria, setCategoria] = useState("social");
+  const [categoria, setCategoria] = useState("Social");
   
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -73,15 +73,44 @@ export const CreateCampaignPage = () => {
         imageUrl = publicUrl;
       }
 
-      await api.post("/campanhas", {
-        titulo,
-        descricao,
-        valor_meta: parseFloat(valorMeta),
-        data_fim: new Date(dataFim).toISOString(),
-        latitude: parseFloat(lat),
-        longitude: parseFloat(lng),
-        imagem_url: imageUrl
-      });
+      try {
+        await api.post("/campanhas", {
+          titulo,
+          descricao,
+          valor_meta: parseFloat(valorMeta),
+          data_fim: new Date(dataFim).toISOString(),
+          latitude: parseFloat(lat),
+          longitude: parseFloat(lng),
+          categoria: categoria || 'Social',
+          imagem_url: imageUrl
+        });
+      } catch (apiError) {
+        console.warn("⚠ API /campanhas falhou ao criar campanha, tentando Supabase:", apiError);
+        const supObj: any = {
+          titulo,
+          descricao,
+          valor_meta: parseFloat(valorMeta),
+          data_fim: new Date(dataFim).toISOString(),
+          latitude: parseFloat(lat) || null,
+          longitude: parseFloat(lng) || null,
+          categoria: categoria || 'Social',
+          imagem_url: imageUrl || null,
+          estado: 'ativa',
+          data_criacao: new Date().toISOString(),
+          usuario_id: (localStorage.getItem('vax_user') ? JSON.parse(localStorage.getItem('vax_user') || '{}').id : null),
+          valor_arrecadado: 0.00
+        };
+        try {
+          const { data, error } = await supabase.from('campanhas').insert(supObj).select();
+          if (error) {
+            console.error("❌ Erro do Supabase:", error);
+            throw error;
+          }
+        } catch (supError) {
+          console.error("❌ Falha no fallback Supabase de criar campanha:", supError);
+          throw supError;
+        }
+      }
 
       navigate("/dashboard");
     } catch (err: any) {
@@ -176,27 +205,6 @@ export const CreateCampaignPage = () => {
                        required
                        leftIcon={<Type className="w-4 h-4" />}
                      />
-
-                     <div className="space-y-3">
-                        <label className="text-sm font-bold text-vax-primary">Categoria do Impacto</label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                           {['Social', 'Educação', 'Saúde', 'Cultura'].map((cat) => (
-                              <button
-                                key={cat}
-                                type="button"
-                                onClick={() => setCategoria(cat.toLowerCase())}
-                                className={`
-                                  py-3 px-4 rounded-vax border-2 font-bold transition-all
-                                  ${categoria === cat.toLowerCase() 
-                                    ? 'bg-vax-primary/5 border-vax-primary text-vax-primary shadow-sm' 
-                                    : 'border-vax-input bg-vax-input text-slate-400 hover:border-vax-border'}
-                                `}
-                              >
-                                {cat}
-                              </button>
-                           ))}
-                        </div>
-                     </div>
                   </div>
                </motion.div>
              )}
@@ -282,31 +290,82 @@ export const CreateCampaignPage = () => {
                         />
                      </div>
 
-                     <div className="p-6 bg-vax-input/30 rounded-vax border border-vax-border space-y-4">
+                     <div className="p-6 bg-vax-input/30 rounded-vax border border-vax-border space-y-6">
                         <div className="flex items-center gap-2 font-bold text-vax-primary text-sm">
-                           <MapPin className="w-4 h-4 text-vax-error-DEFAULT" /> Localização do Projeto (Obrigatório)
+                           <MapPin className="w-4 h-4 text-vax-error-DEFAULT" /> Localização do Projeto
                         </div>
-                        <div className="flex gap-4">
-                          <Input 
-                            placeholder="Latitude (ex: -8.83)" 
-                            type="number"
-                            step="any"
-                            value={lat}
-                            onChange={(e) => setLat(e.target.value)}
-                            required
-                            className="bg-white border-none shadow-sm"
-                          />
-                          <Input 
-                            placeholder="Longitude (ex: 13.25)" 
-                            type="number"
-                            step="any"
-                            value={lng}
-                            onChange={(e) => setLng(e.target.value)}
-                            required
-                            className="bg-white border-none shadow-sm"
-                          />
+                        
+                        <div className="space-y-4 pb-6 border-b border-vax-border">
+                          <p className="text-sm text-slate-600 font-medium">Opção 1: Detectar automaticamente sua localização</p>
+                          <Button 
+                            onClick={async () => {
+                              if (!navigator.geolocation) {
+                                alert("Geolocalização não suportada neste navegador.");
+                                return;
+                              }
+                              
+                              try {
+                                const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                                  navigator.geolocation.getCurrentPosition(resolve, reject, {
+                                    enableHighAccuracy: true,
+                                    timeout: 10000,
+                                    maximumAge: 0
+                                  });
+                                });
+                                
+                                setLat(position.coords.latitude.toString());
+                                setLng(position.coords.longitude.toString());
+                              } catch (error) {
+                                console.error("Erro na geolocalização:", error);
+                                alert("Não foi possível obter sua localização. Verifique as permissões do navegador.");
+                              }
+                            }}
+                            variant="outline"
+                            className="w-full bg-white border-vax-primary text-vax-primary hover:bg-vax-primary hover:text-white"
+                            leftIcon={<MapPin className="w-4 h-4" />}
+                          >
+                            Detectar Automaticamente
+                          </Button>
+                          
+                          {(lat && lng) && (
+                            <div className="p-4 bg-vax-success-light/20 border border-vax-success-DEFAULT/20 rounded-xl">
+                              <div className="flex items-center gap-2 text-vax-success-DEFAULT font-bold text-sm">
+                                <CheckCircle2 className="w-4 h-4" /> Localização Detectada
+                              </div>
+                              <p className="text-xs text-slate-600 mt-1">
+                                Latitude: <span className="font-mono text-vax-primary">{Number(lat).toFixed(6)}</span> | Longitude: <span className="font-mono text-vax-primary">{Number(lng).toFixed(6)}</span>
+                              </p>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-[10px] font-medium text-slate-400 italic">Essas coordenadas são necessárias para que doadores encontrem seu projeto no mapa.</p>
+                        
+                        <div className="space-y-4">
+                          <p className="text-sm text-slate-600 font-medium">Opção 2: Ou digite manualmente (se a geolocalização não funcionar)</p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <Input
+                              label="Latitude"
+                              type="number"
+                              step="any"
+                              placeholder="Ex: -8.8383"
+                              value={lat}
+                              onChange={(e) => setLat(e.target.value)}
+                              required
+                              leftIcon={<MapPin className="w-4 h-4" />}
+                            />
+                            <Input
+                              label="Longitude"
+                              type="number"
+                              step="any"
+                              placeholder="Ex: 13.2344"
+                              value={lng}
+                              onChange={(e) => setLng(e.target.value)}
+                              required
+                              leftIcon={<MapPin className="w-4 h-4" />}
+                            />
+                          </div>
+                        </div>
+                        
+                        <p className="text-[10px] font-medium text-slate-400 italic border-t border-vax-border pt-4">A localização é necessária para que doadores encontrem seu projeto no mapa de proximidade. Valores aproximados: Cazenga ~(-8.84, 13.23) | Talatona ~(-8.94, 13.24)</p>
                       </div>
                   </div>
                </motion.div>
@@ -345,10 +404,10 @@ export const CreateCampaignPage = () => {
              <CheckCircle2 className="w-3.5 h-3.5 text-vax-success-DEFAULT" /> Verificação de NIF Necessária
           </div>
           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-             <CheckCircle2 className="w-3.5 h-3.5 text-vax-success-DEFAULT" /> Retenção de 5% p/ Manutenção
+             <CheckCircle2 className="w-3.5 h-3.5 text-vax-success-DEFAULT" /> Retenção de 3.5% + 55kz p/ Manutenção
           </div>
           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-             <CheckCircle2 className="w-3.5 h-3.5 text-vax-success-DEFAULT" /> Pagamento Seguro via Unitel
+             <CheckCircle2 className="w-3.5 h-3.5 text-vax-success-DEFAULT" /> Pagamento Seguro via PaysGator
           </div>
       </div>
     </div>

@@ -6,9 +6,11 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { supabase } from "../services/supabase";
 import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
+import { normalizarCategoria } from "../constants";
 
 export const AdminCampaignsPage = () => {
   const [campanhas, setCampanhas] = useState<any[]>([]);
@@ -22,14 +24,32 @@ export const AdminCampaignsPage = () => {
     fetchCampaigns();
   }, []);
 
+
+
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
       // GET /campanhas — retorna todas as campanhas do banco SQL
-      const response = await api.get("/campanhas");
-      setCampanhas(response.data || []);
+      let campanhasData: any[] = [];
+      try {
+        const response = await api.get("/admin/campanhas");
+        campanhasData = response.data || [];
+      } catch (apiError) {
+        console.warn("API /admin/campanhas falhou. Fallback /campanhas/Supabase.", apiError);
+        const { data, error } = await supabase.from("campanhas").select("*").order("data_criacao", { ascending: false });
+        if (error) throw error;
+        campanhasData = data || [];
+      }
+
+      setCampanhas(campanhasData.map(c => ({
+        ...c,
+        categoria: normalizarCategoria(c.categoria || c.category || c.tipo || c.type),
+        estado: (c.estado || c.status || c.state || "pendente").toString().toLowerCase()
+      })));
+
     } catch (err) {
-      console.error("Erro ao carregar campanhas do SQL");
+      console.error("Erro ao carregar campanhas do SQL/Supabase", err);
+      setCampanhas([]);
     } finally {
       setLoading(false);
     }
@@ -39,11 +59,40 @@ export const AdminCampaignsPage = () => {
     try {
       setActionLoading(id);
       // PATCH/POST /admin/campanhas/:id/avaliar — atualiza estado no SQL
-      await api.post(`/admin/campanhas/${id}/avaliar`, { estado: newStatus });
-      // Atualiza localmente (otimista) sem re-fetch
+      // Tentar primeiro com 'estado', se falhar tentar com 'status'
+      try {
+        await api.post(`/admin/campanhas/${id}/avaliar`, { estado: newStatus });
+      } catch (error: any) {
+        if (error.response?.data?.message?.includes('estado') || error.response?.data?.message?.includes('status') || error.response?.status === 400) {
+          try {
+            await api.post(`/admin/campanhas/${id}/avaliar`, { status: newStatus });
+          } catch (innerError: any) {
+            console.warn('API /admin/campanhas/:id/avaliar status falhou:', innerError);
+            throw innerError;
+          }
+        } else {
+          throw error;
+        }
+      }
+
+      // Se ainda falhar, tentar atualizar no Supabase como último recurso (apenas para sincronização local)
+      try {
+        const { error } = await supabase
+          .from('campanhas')
+          .update({ estado: newStatus })
+          .eq('id', id);
+        if (error) {
+          console.warn('Supabase update campanha falhou:', error);
+        }
+      } catch (supError) {
+        console.warn('Erro ao atualizar no Supabase:', supError);
+      }
+
       setCampanhas(prev => prev.map(c => c.id === id ? { ...c, estado: newStatus } : c));
-    } catch (err) {
-      alert("Erro ao atualizar estado da campanha. Verifique o back-end.");
+    } catch (err: any) {
+      console.error('Erro ao atualizar campanha:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Erro desconhecido';
+      alert(`Erro ao atualizar estado da campanha: ${errorMessage}`);
     } finally {
       setActionLoading(null);
     }
@@ -52,9 +101,9 @@ export const AdminCampaignsPage = () => {
   const tabs = [
     { key: "todas", label: "Todas" },
     { key: "ativa", label: "Ativas" },
-    { key: "pendente", label: "Pendentes" },
     { key: "suspensa", label: "Suspensas" },
     { key: "concluida", label: "Concluídas" },
+    { key: "falhada", label: "Falhadas" },
   ];
 
   const filteredCampaigns = campanhas.filter(c => {
@@ -68,7 +117,48 @@ export const AdminCampaignsPage = () => {
   // Métricas dinâmicas do banco
   const totalArrecadado = campanhas.reduce((acc, c) => acc + (Number(c.valor_arrecadado) || 0), 0);
   const ativas = campanhas.filter(c => c.estado === 'ativa').length;
-  const pendentes = campanhas.filter(c => c.estado === 'pendente' || c.estado === 'em_aprovacao').length;
+  const suspensas = campanhas.filter(c => c.estado === 'suspensa').length;
+  const concluidas = campanhas.filter(c => c.estado === 'concluida').length;
+  const falhadas = campanhas.filter(c => c.estado === 'falhada').length;
+
+  const gerarCsvCampanhas = () => {
+    const headers = [
+      "ID",
+      "Título",
+      "Categoria",
+      "Estado",
+      "Valor Meta",
+      "Valor Arrecadado",
+      "Progresso (%)",
+      "Data Criação"
+    ];
+
+    const csvData = filteredCampaigns.map(c => [
+      c.id,
+      c.titulo || "",
+      c.categoria || "Social",
+      c.estado || "pendente",
+      Number(c.valor_meta || 0),
+      Number(c.valor_arrecadado || 0),
+      Math.round(((c.valor_arrecadado || 0) / (c.valor_meta || 1)) * 100),
+      c.data_criacao ? new Date(c.data_criacao).toLocaleDateString('pt-BR') : ""
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `campanhas_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const statusColor = (estado: string) => {
     if (estado === 'ativa') return 'bg-vax-success-light text-vax-success-DEFAULT';
@@ -88,7 +178,7 @@ export const AdminCampaignsPage = () => {
           <h1 className="text-3xl font-bold text-vax-primary tracking-tighter">Gestão de Campanhas</h1>
           <p className="text-slate-500 text-sm mt-1">Aprovar, suspender e auditar todas as iniciativas da plataforma.</p>
         </div>
-        <Button variant="outline" className="border-vax-border bg-white h-10 text-xs font-bold uppercase tracking-widest" leftIcon={<Download className="w-4 h-4" />}>
+        <Button onClick={gerarCsvCampanhas} variant="outline" className="border-vax-border bg-white h-10 text-xs font-bold uppercase tracking-widest" leftIcon={<Download className="w-4 h-4" />}>
           Exportar CSV
         </Button>
       </header>
@@ -96,8 +186,8 @@ export const AdminCampaignsPage = () => {
       {/* Métricas reais do banco */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <MetricCard label="Campanhas Ativas" value={ativas.toString()} icon={<CheckCircle2 className="w-5 h-5 text-vax-success-DEFAULT" />} />
-        <MetricCard label="Volume Total Auditado" value={`${totalArrecadado.toLocaleString()} AKZ`} icon={<TrendingUp className="w-5 h-5 text-vax-primary" />} />
-        <MetricCard label="Pendentes de Aprovação" value={pendentes.toString()} icon={<Clock className="w-5 h-5 text-amber-500" />} warning={pendentes > 0} />
+        <MetricCard label="Campanhas Suspensas" value={suspensas.toString()} icon={<Clock className="w-5 h-5 text-amber-500" />} warning={suspensas > 0} />
+        <MetricCard label="Campanhas Falhadas" value={falhadas.toString()} icon={<XCircle className="w-5 h-5 text-vax-error-DEFAULT" />} warning={falhadas > 0} />
       </div>
 
       {/* Filtros */}
@@ -225,6 +315,22 @@ export const AdminCampaignsPage = () => {
                               title="Reativar campanha"
                             >
                               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                            </button>
+                          )}
+
+                          {/* Banir permanentemente (apenas de suspensa ou ativa) */}
+                          {(c.estado === 'suspensa' || c.estado === 'ativa' || c.estado === 'pendente') && (
+                            <button
+                              onClick={() => {
+                                if (confirm('CONFIRMAR: Esta ação é permanente. A campanha será marcada como FALHADA e removida.')) {
+                                  updateCampaignStatus(c.id, 'falhada');
+                                }
+                              }}
+                              disabled={isLoading}
+                              className="p-2 bg-red-100 border border-red-300 rounded-lg text-red-600 hover:bg-red-600 hover:text-white transition-all disabled:opacity-50"
+                              title="Banir permanentemente"
+                            >
+                              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
                             </button>
                           )}
                         </div>

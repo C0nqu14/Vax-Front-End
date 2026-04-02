@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, AlertCircle, HelpCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../services/api";
+import logo from "../../assets/vax-logo.png";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 
@@ -56,16 +57,10 @@ export const LoginPage = () => {
   return (
     <div className="min-h-screen w-full flex bg-vax-bg items-center justify-center p-4 relative overflow-hidden">
       {/* Header Logo purely for Auth */}
-      <div className="absolute top-0 left-0 w-full p-8 flex justify-between items-center bg-white border-b border-vax-border z-10">
-          <div className="flex items-center gap-3">
-             <div className="w-10 h-10 bg-vax-primary rounded-xl flex items-center justify-center text-white">
-                <Mail className="w-6 h-6" />
-             </div>
-             <span className="text-xl font-bold text-vax-primary tracking-tight">Vax</span>
+      <div className="absolute top-0 left-0 w-full p-10 flex justify-between items-center bg-white border-b border-vax-border z-10 h-28 sm:h-32">
+          <div className="flex items-center justify-center w-full">
+             <img src={logo} alt="Vax Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
           </div>
-          <Button variant="outline" className="bg-vax-input" leftIcon={<HelpCircle className="w-4 h-4" />}>
-             Ajuda
-          </Button>
       </div>
 
       <motion.div 
@@ -75,7 +70,7 @@ export const LoginPage = () => {
       >
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-vax-primary tracking-tight mb-2">Bem-vindo de volta</h2>
-          <p className="text-slate-500 text-sm">Acesse sua conta com segurança para gerenciar seus investimentos</p>
+          <p className="text-slate-500 text-sm">Acesse sua conta com segurança para contribuir com sua vax</p>
         </div>
 
         <AnimatePresence>
@@ -161,7 +156,7 @@ export const LoginPage = () => {
       
       <div className="absolute bottom-6 text-center w-full">
          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-           © 2024 Crowdfund Fintech. Conectando investidores e projetos inovadores.
+           © 2026 vax Fintech. Conectando financiadores a causas sócias próximas.
          </p>
       </div>
     </div>

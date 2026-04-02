@@ -6,6 +6,7 @@ import api from "../services/api";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
+import logo from "../../assets/vax-logo.png";
 
 export const RegisterPage = () => {
   const [nome, setNome] = useState("");
@@ -15,7 +16,7 @@ export const RegisterPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // NIF Validation states
   const [nifData, setNifData] = useState<any>(null);
   const [isValidatingNif, setIsValidatingNif] = useState(false);
@@ -24,7 +25,7 @@ export const RegisterPage = () => {
   const navigate = useNavigate();
 
   // Helper to normalize strings for comparison
-  const normalize = (str: string) => 
+  const normalize = (str: string) =>
     str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
   // Real-time NIF Validation via vaquinha.ao/nif
@@ -38,20 +39,20 @@ export const RegisterPage = () => {
 
       setIsValidatingNif(true);
       setNifError(null);
-      
+
       try {
         const response = await fetch(`https://vaquinha.ao/nif/${nif}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data) {
             setNifData(data.data);
-            
+
             // Anti-fraud: Immediate feedback if name doesn't match
             if (nome.trim().length > 5) {
                const apiWords = normalize(data.data.nome).split(/\s+/);
                const inputWords = normalize(nome).split(/\s+/);
                const nameMatches = inputWords.length >= 2 && inputWords.every(word => apiWords.includes(word));
-               
+
                if (!nameMatches) {
                  setNifError("O nome não corresponde ao titular deste NIF.");
                } else if (data.data.estado !== 'Activo') {
@@ -88,13 +89,13 @@ export const RegisterPage = () => {
     setLoading(true);
 
     try {
-      await api.post("/auth/registar", { 
+      await api.post("/auth/registar", {
         nome_completo: nome,
         email,
         nif,
-        senha: password 
+        senha: password
       });
-      
+
       setSuccess(true);
       setTimeout(() => navigate("/login"), 2500);
     } catch (err: any) {
@@ -108,16 +109,13 @@ export const RegisterPage = () => {
     <div className="min-h-screen w-full flex bg-vax-bg items-center justify-center p-4 relative overflow-hidden">
       {/* Auth Branding Header */}
       <div className="absolute top-0 left-0 w-full p-8 flex justify-between items-center bg-white border-b border-vax-border z-10 transition-all">
-          <div className="flex items-center gap-3">
-             <div className="w-10 h-10 bg-vax-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-vax-primary/20">
-                <ShieldCheck className="w-6 h-6" />
-             </div>
-             <span className="text-xl font-bold text-vax-primary tracking-tight">Cazenga Crowdfund</span>
-          </div>
-          <div className="flex items-center gap-4">
-             <span className="text-sm font-medium text-slate-400 hidden sm:block">Já possui acesso?</span>
-             <Button variant="outline" className="border-vax-border text-vax-primary hover:bg-vax-primary hover:text-white" onClick={() => navigate('/login')}>Entrar</Button>
-          </div>
+         <div className="flex items-center gap-3">
+            <img src={logo} alt="VAX" className="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
+         </div>
+         <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-slate-400 hidden sm:block">Já possui acesso?</span>
+            <Button variant="outline" className="border-vax-border text-vax-primary hover:bg-vax-primary hover:text-white" onClick={() => navigate('/login')}>Entrar</Button>
+         </div>
       </div>
 
       <motion.div 
@@ -165,7 +163,7 @@ export const RegisterPage = () => {
           <form onSubmit={handleRegister} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="space-y-1.5">
-                  <Input 
+                  <Input
                     label="Nome Titular"
                     placeholder="Nome completo no BI"
                     value={nome}
@@ -177,7 +175,7 @@ export const RegisterPage = () => {
                </div>
 
                <div className="space-y-1.5 relative">
-                  <Input 
+                  <Input
                     label="NIF de Cadastro"
                     placeholder="9 dígitos obrigatórios"
                     value={nif}
@@ -186,7 +184,7 @@ export const RegisterPage = () => {
                     leftIcon={<Fingerprint className="w-4 h-4" />}
                     rightIcon={isValidatingNif ? <Loader2 className="w-4 h-4 animate-spin text-vax-primary" /> : null}
                   />
-                  
+
                   {/* NIF Status Micro-feedback */}
                   <AnimatePresence>
                     {nifData && !nifError && (
@@ -207,7 +205,7 @@ export const RegisterPage = () => {
                </div>
             </div>
 
-            <Input 
+            <Input
               label="E-mail Corporativo ou Pessoal"
               type="email"
               placeholder="exemplo@dominio.ao"
@@ -217,7 +215,7 @@ export const RegisterPage = () => {
               leftIcon={<Mail className="w-4 h-4" />}
             />
 
-            <Input 
+            <Input
               label="Senha de Acesso"
               type="password"
               placeholder="Mínimo 8 caracteres"
@@ -227,8 +225,8 @@ export const RegisterPage = () => {
               leftIcon={<Lock className="w-4 h-4" />}
             />
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full h-11 text-xs font-black shadow-xl shadow-vax-primary/20 group uppercase tracking-[0.2em] rounded-full"
               isLoading={loading}
               disabled={success || isValidatingNif || !!nifError}

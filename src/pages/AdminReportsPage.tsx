@@ -17,9 +17,11 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import api from "../services/api";
+import { supabase } from "../services/supabase";
 import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
+import { normalizarCategoria } from "../constants";
 
 export const AdminReportsPage = () => {
   const [denuncias, setDenuncias] = useState<any[]>([]);
@@ -32,27 +34,99 @@ export const AdminReportsPage = () => {
     campanhas_ativas: 0
   });
 
+  const gerarCsvDenuncias = () => {
+    const headers = ['ID', 'Motivo', 'Estado', 'Data Criação', 'Campanha ID'];
+    const rows = denuncias.map(d => [
+      d.id?.substring(0, 8) || '',
+      `${d.motivo || ''}`.replace(/"/g, '""'),
+      d.estado || '',
+      d.data_criacao ? new Date(d.data_criacao).toLocaleDateString('pt-BR') : '',
+      d.campanha_id?.substring(0, 8) || 'N/A'
+    ]);
+
+    const csv = [
+      headers.join(','),
+      ...rows.map(r => r.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    return csv;
+  };
+
+  const handleGerarRelatorio = () => {
+    const csv = gerarCsvDenuncias();
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `relatorio_denuncias_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
         setLoading(true);
-        const [denunciasRes, campanhasRes, usuariosRes] = await Promise.all([
-          api.get("/admin/denuncias"),
-          api.get("/campanhas"),
-          api.get("/admin/usuarios")
-        ]);
-
-        setDenuncias(denunciasRes.data || []);
-        setCampanhas(campanhasRes.data || []);
         
+        let denunciasData = [];
+        let campanhasData = [];
+        let usuariosData = [];
+
+        try {
+          const denunciasRes = await api.get("/admin/denuncias");
+          denunciasData = denunciasRes.data || [];
+        } catch (err1) {
+          console.warn("Endpoint /admin/denuncias não disponível, usando Supabase fallback", err1);
+          const { data, error } = await supabase.from("denuncias").select("*").order("data_criacao", { ascending: false });
+          if (error) {
+            console.error("Erro Supabase denuncias:", error);
+            denunciasData = [];
+          } else {
+            denunciasData = data || [];
+          }
+        }
+
+        try {
+          const campanhasRes = await api.get("/admin/campanhas");
+          campanhasData = campanhasRes.data || [];
+        } catch (err2) {
+          console.warn("Erro ao carregar campanhas backend (/admin/campanhas), usando Supabase fallback", err2);
+          const { data, error } = await supabase.from("campanhas").select("*").order("data_criacao", { ascending: false });
+          if (error) {
+            console.error("Erro Supabase campanhas:", error);
+            campanhasData = [];
+          } else {
+            campanhasData = data || [];
+          }
+        }
+
+        try {
+          const usuariosRes = await api.get("/admin/usuarios");
+          usuariosData = usuariosRes.data || [];
+        } catch (err3) {
+          console.warn("Endpoint /admin/usuarios não disponível, usando Supabase fallback", err3);
+          const { data, error } = await supabase.from("usuarios").select("*").order("data_criacao", { ascending: false });
+          if (error) {
+            console.error("Erro Supabase usuarios:", error);
+            usuariosData = [];
+          } else {
+            usuariosData = data || [];
+          }
+        }
+
+        setDenuncias(denunciasData);
+        setCampanhas(campanhasData);
+
         setStats({
-           total_arrecadado: (campanhasRes.data || []).reduce((acc: number, curr: any) => acc + (Number(curr.valor_arrecadado) || 0), 0),
-           total_denuncias: (denunciasRes.data || []).length,
-           usuarios_ativos: (usuariosRes.data || []).filter((u: any) => u.ativo).length,
-           campanhas_ativas: (campanhasRes.data || []).filter((c: any) => c.estado === 'ativa').length
+           total_arrecadado: campanhasData.reduce((acc: number, curr: any) => acc + (Number(curr.valor_arrecadado) || 0), 0),
+           total_denuncias: denunciasData.length,
+           usuarios_ativos: usuariosData.filter((u: any) => u.ativo).length,
+           campanhas_ativas: campanhasData.filter((c: any) => c.estado === 'ativa').length
         });
       } catch (err) {
-        console.error("Erro ao carregar auditoria:", err);
+        console.error("Erro geral ao carregar auditoria:", err);
       } finally {
         setLoading(false);
       }
@@ -62,26 +136,25 @@ export const AdminReportsPage = () => {
 
   const updateDenunciaStatus = async (id: string, newStatus: string) => {
     try {
-      // PATCH é o método REST correto para atualização de estado
-      // Se o teu back-end usa PUT ou POST, adjusta aqui
+      
       await api.patch(`/admin/denuncias/${id}`, { estado: newStatus });
       setDenuncias(prev => prev.map(d => d.id === id ? { ...d, estado: newStatus } : d));
     } catch {
       try {
-        // Fallback para POST se PATCH não estiver configurado no back-end
+        
         await api.post(`/admin/denuncias/${id}`, { estado: newStatus });
         setDenuncias(prev => prev.map(d => d.id === id ? { ...d, estado: newStatus } : d));
       } catch (err2) {
         alert("Ação registada localmente. Confirme se o endpoint do back-end está ativo.");
-        // Atualiza UI mesmo se o back-end falhar (optimistic update)
+      
         setDenuncias(prev => prev.map(d => d.id === id ? { ...d, estado: newStatus } : d));
       }
     }
   };
 
-  // Cálculo real por categoria vindo do back-end
+ 
   const categoryCounts = (campanhas || []).reduce((acc: any, curr: any) => {
-    const cat = curr.categoria || "Social";
+    const cat = normalizarCategoria(curr.categoria || "");
     acc[cat] = (acc[cat] || 0) + 1;
     return acc;
   }, {});
@@ -92,17 +165,26 @@ export const AdminReportsPage = () => {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-vax-border pb-10">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-             <div className="w-10 h-10 bg-vax-error-DEFAULT rounded-xl flex items-center justify-center text-white shadow-xl">
-                <Monitor className="w-6 h-6" />
-             </div>
              <Badge className="bg-vax-error-light text-vax-error-DEFAULT border-none px-4 py-1.5 font-black tracking-widest text-[9px] uppercase">Auditoria Centralizada</Badge>
           </div>
           <h1 className="text-6xl font-bold text-vax-primary tracking-tighter leading-none">Segurança Vax</h1>
           <p className="text-slate-500 font-medium text-xl leading-relaxed max-w-xl">Monitoramento técnico de conformidade AF-NIF e integridade financeira.</p>
         </div>
         <div className="flex gap-4">
-           <Button className="bg-vax-primary font-black h-11 px-8 rounded-full text-xs uppercase tracking-widest shadow-xl shadow-vax-primary/10" leftIcon={<Download className="w-4 h-4" />}>
-              Exportar Log
+           <Button 
+             onClick={() => {
+               const csv = gerarCsvDenuncias();
+               const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+               const link = document.createElement('a');
+               const url = URL.createObjectURL(blob);
+               link.setAttribute('href', url);
+               link.setAttribute('download', `denuncias_${new Date().toISOString().split('T')[0]}.csv`);
+               link.click();
+             }}
+             className="bg-vax-primary font-black h-11 px-8 rounded-full text-xs uppercase tracking-widest shadow-xl shadow-vax-primary/10" 
+             leftIcon={<Download className="w-4 h-4" />}
+           >
+              Exportar CSV
            </Button>
         </div>
       </header>
@@ -147,7 +229,7 @@ export const AdminReportsPage = () => {
          <div className="space-y-12">
             <Card className="p-10 space-y-10 shadow-3xl border-vax-border rounded-[50px] bg-white">
                <h4 className="text-2xl font-bold text-vax-primary tracking-tighter flex items-center justify-between">
-                  Distribuição Real
+                  Distribuição
                   <PieChart className="w-6 h-6 text-slate-200" />
                </h4>
                <div className="space-y-8">
@@ -161,7 +243,7 @@ export const AdminReportsPage = () => {
                <FileText className="w-10 h-10 opacity-30 mb-6" />
                <h4 className="text-xl font-bold tracking-tighter">Auditoria de Logs</h4>
                <p className="text-sm text-white/60 mt-3 leading-relaxed">Relatório completo de todas as alterações de estados executadas.</p>
-               <Button className="w-full bg-vax-primary text-white h-11 mt-8 rounded-full text-xs font-black uppercase tracking-widest">Gerar Auditoria</Button>
+               <Button onClick={handleGerarRelatorio} className="w-full bg-vax-primary text-white h-11 mt-8 rounded-full text-xs font-black uppercase tracking-widest">Gerar Relatório</Button>
             </Card>
          </div>
       </div>
@@ -194,8 +276,10 @@ const RealProgressRow = ({ label, value, color }: any) => (
 );
 
 const AdminDenunciaRow = ({ denuncia, onResolve }: any) => {
+  const [banLoading, setBanLoading] = useState(false);
   const isPendente = denuncia.estado === 'pendente';
   const isResolvido = denuncia.estado === 'analisado' || denuncia.estado === 'resolvido';
+  const campanhaId = denuncia.campanha_id || denuncia.campanha?.id;
   
   return (
     <Card className={`p-8 rounded-[24px] border-2 bg-white shadow-vax flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all ${
@@ -222,7 +306,7 @@ const AdminDenunciaRow = ({ denuncia, onResolve }: any) => {
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">REF: {denuncia.id?.substring(0, 8)}...</p>
         </div>
       </div>
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end">
         {isPendente && (
           <>
             <Button 
@@ -232,8 +316,31 @@ const AdminDenunciaRow = ({ denuncia, onResolve }: any) => {
             >
               Resolver
             </Button>
+            {campanhaId && (
+              <Button 
+                onClick={() => {
+                  if (!confirm("Suspender esta campanha?")) return;
+                  setBanLoading(true);
+                  api.post(`/admin/campanhas/${campanhaId}/avaliar`, { estado: 'suspensa' })
+                    .then(() => {
+                      alert("Campanha suspensa com sucesso!");
+                      onResolve('resolvido');
+                    })
+                    .catch((err: any) => {
+                      console.error("Erro ao suspender campanha:", err);
+                      alert(err.response?.data?.error || "Erro ao suspender campanha. Verifique o back-end.");
+                    })
+                    .finally(() => setBanLoading(false));
+                }}
+                disabled={banLoading}
+                className="h-11 px-6 rounded-full font-black text-[10px] uppercase tracking-widest bg-vax-error-DEFAULT text-white shadow-lg hover:bg-vax-error-DEFAULT/90"
+                leftIcon={banLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+              >
+                {banLoading ? "Banindo..." : "Banir Causa"}
+              </Button>
+            )}
             <Button 
-              onClick={() => onResolve('rejeitado')} 
+              onClick={() => onResolve('resolvido')} 
               variant="outline"
               className="h-11 px-6 rounded-full font-black text-[10px] uppercase tracking-widest border-vax-error-DEFAULT text-vax-error-DEFAULT hover:bg-vax-error-light"
               leftIcon={<XCircle className="w-4 h-4" />}

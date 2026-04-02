@@ -14,6 +14,7 @@ import { AdminDonationsPage } from './pages/AdminDonationsPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MyCampaignsPage } from './pages/MyCampaignsPage';
+import { UserProfilePage } from './pages/UserProfilePage';
 import { AppLayout } from './components/AppLayout';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
             <Route path="/meus-projetos" element={<MyCampaignsPage />} />
             <Route path="/historico" element={<HistoryPage />} />
             <Route path="/perfil" element={<ProfilePage />} />
+            <Route path="/perfil/:id" element={<UserProfilePage />} />
             <Route path="/admin/usuarios" element={<AdminUserManagementPage />} />
             <Route path="/admin/campanhas" element={<AdminCampaignsPage />} />
             <Route path="/admin/relatorios" element={<AdminReportsPage />} />

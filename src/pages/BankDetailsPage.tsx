@@ -203,7 +203,7 @@ export const BankDetailsPage = () => {
             <div className="p-5 bg-vax-success-light/30 border border-dashed border-vax-success-DEFAULT/30 rounded-vax flex items-start gap-4">
               <ShieldCheck className="w-6 h-6 text-vax-success-DEFAULT shrink-0 mt-0.5" />
               <div>
-                 <p className="text-xs font-bold text-vax-success-DEFAULT mb-1">PROTEÇÃO BANCO CENTRAL</p>
+                 <p className="text-xs font-bold text-vax-success-DEFAULT mb-1">PROTEÇÃO BNA</p>
                  <p className="text-xs text-vax-success-DEFAULT/80 leading-relaxed font-medium">
                    Seus dados são criptografados com o padrão AES-256-GCM. A VAX não tem acesso direto aos seus fundos, apenas facilita a liquidação via canais oficiais.
                  </p>

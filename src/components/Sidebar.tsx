@@ -14,6 +14,7 @@ import {
   PlusCircle,
   History
 } from "lucide-react";
+import logo from "../../assets/vax-logo.png";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar } from "./ui/Avatar";
 import { useAuth } from "../contexts/AuthContext";
@@ -65,16 +66,13 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}
       `}>
         {/* Brand Logo */}
-        <div className="p-6 pb-4 flex items-center justify-between border-b border-vax-border">
-          <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 bg-vax-primary rounded-xl flex items-center justify-center text-white shadow-lg group-hover:rotate-6 transition-transform">
-              <Globe className="w-5 h-5" />
-            </div>
-            <span className="text-xl font-bold text-vax-primary tracking-tight">Vax</span>
+        <div className="p-6 pb-4 flex items-center justify-center relative border-b border-vax-border">
+          <Link to="/dashboard" className="flex items-center">
+            <img src={logo} alt="Vax Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
           </Link>
           <button 
             onClick={onClose}
-            className="lg:hidden p-2 rounded-lg bg-vax-input text-vax-primary hover:bg-vax-border transition-all"
+            className="lg:hidden absolute right-4 p-2 rounded-lg bg-vax-input text-vax-primary hover:bg-vax-border transition-all"
           >
             <X className="w-5 h-5" />
           </button>
@@ -95,7 +93,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <div className={`w-1.5 h-1.5 rounded-full ${isAdmin ? 'bg-vax-error-DEFAULT' : 'bg-vax-success-DEFAULT'} animate-pulse`} />
                   <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-                    {isAdmin ? "Administrador" : "Mobilizador"}
+                    {isAdmin ? "Administrador" : "Utilizador"}
                   </p>
                 </div>
               </div>

@@ -7,21 +7,19 @@ import {
   ChevronRight,
   AlertCircle,
   Briefcase,
-  ExternalLink,
   Target,
   Loader2,
-  BarChart3,
   Search,
-  MoreVertical,
   Activity
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import api from "../services/api";
+import { supabase } from "../services/supabase";
+import { useAuth } from "../contexts/AuthContext";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
-import { Avatar } from "../components/ui/Avatar";
+import { normalizarCategoria } from "../constants";
 
 export const MyCampaignsPage = () => {
   const [campanhas, setCampanhas] = useState<any[]>([]);
@@ -29,36 +27,62 @@ export const MyCampaignsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchMyCampaigns = async () => {
       try {
         setLoading(true);
-        // O backend esperado retorna as campanhas
-        const response = await api.get("/campanhas");
-        
-        // Filtramos pelo usuário logado de forma rigorosa
-        const userStr = localStorage.getItem("vax_user");
-        if (!userStr) {
-          navigate("/login");
-          return;
-        }
-        const user = JSON.parse(userStr);
-        
-        // Filtro dinâmico por usuario_id
-        const myItems = response.data.filter((c: any) => c.usuario_id === user.id);
-        setCampanhas(myItems);
+        setError(null);
+
+        if (!user?.id) return;
+
+        // Buscamos as campanhas com o JOIN dos financiamentos para soma real
+        const { data: supaData, error: supaError } = await supabase
+          .from("campanhas")
+          .select(`
+            *,
+            financiamento (
+              valor,
+              estado_pagamento
+            )
+          `)
+          .eq("usuario_id", user.id)
+          .order("data_criacao", { ascending: false });
+
+        if (supaError) throw supaError;
+
+        // Processamento e Normalização (Cálculo da Arrecadação Real)
+        const normalized = (supaData || []).map((c: any) => {
+          // Filtramos apenas pagamentos concluídos para a soma real
+          const financiamentosValidos = (c.financiamento || [])
+            .filter((f: any) => f.estado_pagamento === 'concluido' || f.estado_pagamento === 'sucesso');
+          
+          const somaReal = financiamentosValidos.reduce((acc: number, f: any) => acc + Number(f.valor), 0);
+
+          return {
+            ...c,
+            categoria: normalizarCategoria(c.categoria || ""),
+            estado: (c.estado || "pendente").toString().toLowerCase(),
+            valor_arrecadado: somaReal, // Substituímos o valor estático pelo real auditado
+            contagem_apoios: financiamentosValidos.length
+          };
+        });
+
+        setCampanhas(normalized);
       } catch (err: any) {
-        setError("O servidor do Cazenga não respondeu. Tente novamente mais tarde.");
         console.error("Erro ao carregar campanhas:", err);
+        setError("Não foi possível sincronizar seus dados com o banco do Cazenga.");
       } finally {
         setLoading(false);
       }
     };
-    fetchMyCampaigns();
-  }, [navigate]);
 
-  const totalArrecadado = campanhas.reduce((acc, curr) => acc + (Number(curr.valor_arrecadado) || 0), 0);
+    if (user) fetchMyCampaigns();
+  }, [user]);
+
+  // Cálculos de Totais para os Stats
+  const totalArrecadado = campanhas.reduce((acc, curr) => acc + curr.valor_arrecadado, 0);
   const totalMeta = campanhas.reduce((acc, curr) => acc + (Number(curr.valor_meta) || 0), 0);
   
   const filtered = campanhas.filter(c => 
@@ -73,7 +97,7 @@ export const MyCampaignsPage = () => {
             <Activity className="w-6 h-6 text-vax-primary opacity-50" />
          </div>
       </div>
-      <p className="text-sm font-bold text-vax-primary animate-pulse tracking-[0.2em] uppercase">Sincronizando Seus Impactos Reais...</p>
+      <p className="text-sm font-bold text-vax-primary animate-pulse tracking-[0.2em] uppercase">Sincronizando Seus Impactos...</p>
     </div>
   );
 
@@ -82,13 +106,13 @@ export const MyCampaignsPage = () => {
       <header className="flex flex-col xl:flex-row xl:items-end justify-between gap-8">
         <div className="space-y-4">
            <div className="flex items-center gap-3">
-              <Badge variant="info" className="bg-vax-primary/10 text-vax-primary border-none px-4 py-1.5 font-bold tracking-widest text-[10px] uppercase">Painel do Mobilizador</Badge>
+              <Badge variant="info" className="bg-vax-primary/10 text-vax-primary border-none px-4 py-1.5 font-bold tracking-widest text-[10px] uppercase">Painel do Usuário</Badge>
               <div className="h-1 w-1 bg-slate-300 rounded-full" />
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Controlo de Fluxo</span>
            </div>
            <h1 className="text-5xl font-bold text-vax-primary tracking-tighter">Minhas Iniciativas</h1>
            <p className="text-slate-500 font-medium text-xl leading-relaxed max-w-2xl">
-              Gerencie a arrecadação e o progresso das suas causas de impacto no Cazenga.
+             Gerencie a arrecadação e o progresso das suas causas de impacto no Cazenga.
            </p>
         </div>
         <Button 
@@ -103,10 +127,10 @@ export const MyCampaignsPage = () => {
       {/* Stats Summary Panel */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatSummary 
-          label="Total Mobilizado" 
-          value={`${totalArrecadado.toLocaleString()} AKZ`} 
+          label="Total Arrecadado" 
+          value={`${totalArrecadado.toLocaleString()} KZ`} 
           icon={<TrendingUp className="w-5 h-5 text-vax-success-DEFAULT" />} 
-          subText={`${campanhas.length > 0 ? Math.round((totalArrecadado / totalMeta) * 100) : 0}% da meta atingida`}
+          subText={`${totalMeta > 0 ? Math.round((totalArrecadado / totalMeta) * 100) : 0}% da meta atingida`}
         />
         <StatSummary 
           label="Causas Criadas" 
@@ -116,13 +140,13 @@ export const MyCampaignsPage = () => {
         />
         <StatSummary 
           label="Metas Batidas" 
-          value={campanhas.filter(c => Number(c.valor_arrecadado) >= Number(c.valor_meta)).length.toString()} 
+          value={campanhas.filter(c => c.valor_arrecadado >= Number(c.valor_meta)).length.toString()} 
           icon={<Target className="w-5 h-5 text-amber-500" />} 
           subText="Impacto Concluído"
         />
         <StatSummary 
           label="Total Apoiadores" 
-          value={campanhas.reduce((acc, curr) => acc + (curr.financiamento?.length || 0), 0).toString()} 
+          value={campanhas.reduce((acc, curr) => acc + curr.contagem_apoios, 0).toString()} 
           icon={<Users className="w-5 h-5 text-vax-primary" />} 
           subText="Vizinhos engajados"
         />
@@ -162,11 +186,8 @@ export const MyCampaignsPage = () => {
                   <Plus className="w-10 h-10 text-slate-200" />
                </div>
                <h3 className="text-3xl font-bold text-vax-primary tracking-tighter">O Cazenga espera pela sua ideia</h3>
-               <p className="text-slate-500 mt-4 font-medium max-w-sm mx-auto text-lg leading-relaxed">Não encontramos iniciativas registradas. Lance sua primeira campanha agora e lidere a mudança.</p>
-               <Button 
-                onClick={() => navigate("/campanhas/nova")}
-                className="mt-12 px-12 py-7 text-lg font-bold shadow-xl"
-               >
+               <p className="text-slate-500 mt-4 font-medium max-w-sm mx-auto text-lg leading-relaxed">Não encontramos iniciativas registradas.</p>
+               <Button onClick={() => navigate("/campanhas/nova")} className="mt-12 px-12 py-7 text-lg font-bold shadow-xl">
                  Criar Primeira Campanha
                </Button>
             </motion.div>
@@ -178,7 +199,7 @@ export const MyCampaignsPage = () => {
 };
 
 const StatSummary = ({ label, value, icon, subText }: any) => (
-  <Card className="p-8 group hover:border-vax-primary transition-all relative overflow-hidden bg-white border-vax-border/50 shadow-vax">
+  <Card className="p-8 group hover:border-vax-primary transition-all bg-white border-vax-border/50 shadow-vax">
     <div className="flex flex-col gap-6">
       <div className="w-12 h-12 bg-vax-input rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">{icon}</div>
       <div>
@@ -191,7 +212,7 @@ const StatSummary = ({ label, value, icon, subText }: any) => (
 );
 
 const CampaignManagementRow = ({ campaign, onClick }: any) => {
-  const percentage = Math.min((campaign.valor_arrecadado / campaign.valor_meta) * 100, 100);
+  const percentage = Math.min((campaign.valor_arrecadado / Number(campaign.valor_meta || 1)) * 100, 100);
   
   return (
     <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -201,7 +222,7 @@ const CampaignManagementRow = ({ campaign, onClick }: any) => {
       >
         <div className="absolute top-0 left-0 w-1.5 h-full bg-vax-primary opacity-0 group-hover:opacity-100 transition-opacity" />
         
-        <div className="w-32 h-32 bg-vax-input rounded-[32px] overflow-hidden shrink-0 shadow-lg group-hover:shadow-vax transition-all duration-500 border border-vax-border">
+        <div className="w-32 h-32 bg-vax-input rounded-[32px] overflow-hidden shrink-0 shadow-lg border border-vax-border">
            {campaign.imagem_url ? (
               <img src={campaign.imagem_url} alt={campaign.titulo} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
            ) : (
@@ -216,18 +237,18 @@ const CampaignManagementRow = ({ campaign, onClick }: any) => {
               <div className="space-y-2">
                  <div className="flex items-center gap-3">
                     <Badge variant="neutral" className="bg-vax-input text-vax-primary border-none text-[9px] px-3 font-bold uppercase">{campaign.categoria || 'Social'}</Badge>
-                    <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest whitespace-nowrap">
+                    <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest">
                       <Clock className="w-3.5 h-3.5" /> Expira em {new Date(campaign.data_fim).toLocaleDateString()}
                     </span>
                  </div>
-                 <h3 className="text-3xl font-bold text-vax-primary group-hover:text-vax-primary/70 transition-colors tracking-tighter">{campaign.titulo}</h3>
+                 <h3 className="text-3xl font-bold text-vax-primary tracking-tighter">{campaign.titulo}</h3>
               </div>
               
               <div className="xl:text-right bg-vax-input/40 p-4 rounded-3xl border border-vax-border px-8">
                  <span className="block text-3xl font-bold text-vax-primary leading-none tabular-nums">
-                    {Number(campaign.valor_arrecadado).toLocaleString()} <span className="text-sm font-medium opacity-30">AKZ</span>
+                    {campaign.valor_arrecadado.toLocaleString()} <span className="text-sm font-medium opacity-30">AKZ</span>
                  </span>
-                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 block">Total Arrecadado</span>
+                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 block">Auditado Real</span>
               </div>
            </div>
            
@@ -249,7 +270,7 @@ const CampaignManagementRow = ({ campaign, onClick }: any) => {
               <div className="flex flex-wrap justify-between items-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                  <div className="flex items-center gap-4">
                     <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-vax-border/50">META: {Number(campaign.valor_meta).toLocaleString()} AKZ</span>
-                    <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-vax-border/50">{campaign.financiamento?.length || 0} APOIOS</span>
+                    <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-vax-border/50">{campaign.contagem_apoios} APOIOS</span>
                  </div>
                  <span className="flex items-center gap-2 text-vax-primary group-hover:translate-x-1 transition-transform">PAINEL DE GESTÃO <ChevronRight className="w-4 h-4" /></span>
               </div>

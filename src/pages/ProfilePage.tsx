@@ -8,6 +8,7 @@ import { Input } from "../components/ui/Input";
 import { Avatar } from "../components/ui/Avatar";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { supabase } from "../services/supabase";
 
 export const ProfilePage = () => {
   const [user, setUser] = useState<any>(JSON.parse(localStorage.getItem("vax_user") || "{}"));
@@ -24,12 +25,35 @@ export const ProfilePage = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await api.get("/usuario/perfil");
-        setUser(response.data);
-        setEditForm({ nome_completo: response.data.nome_completo, email: response.data.email });
-        localStorage.setItem("vax_user", JSON.stringify(response.data));
+        let userData: any = null;
+        try {
+          const response = await api.get("/usuario/perfil");
+          userData = response.data;
+        } catch (err1) {
+          console.warn("API /usuario/perfil falhou. Tentando Supabase...", err1);
+          const storedUser = JSON.parse(localStorage.getItem("vax_user") || "null");
+          if (storedUser?.id) {
+            const { data: supUser, error: supError } = await supabase
+              .from("usuarios")
+              .select("id, nome_completo, email, nif, ativo, data_criacao, iban_reembolso, dados_bancarios")
+              .eq("id", storedUser.id)
+              .single();
+            if (supError) {
+              console.error("Erro Supabase ao buscar perfil:", supError);
+            }
+            userData = supUser || storedUser;
+          } else {
+            userData = storedUser || { ...user };
+          }
+        }
+
+        if (userData) {
+          setUser(userData);
+          setEditForm({ nome_completo: userData.nome_completo || "", email: userData.email || "" });
+          localStorage.setItem("vax_user", JSON.stringify(userData));
+        }
       } catch (err) {
-        console.error("Erro ao carregar perfil:", err);
+        console.error("Erro ao carregar perfil no fluxo de fallback:", err);
       } finally {
         setLoading(false);
       }
@@ -67,7 +91,8 @@ export const ProfilePage = () => {
     }
     setUpdateLoading(true);
     try {
-      // Endpoint presumido conforme as especificações de segurança
+      // Nota: PUT /usuario/senha pode não existir no backend
+      // Se falhar, mostrar que senha só pode ser alterada via back-end ou reset
       await api.put("/usuario/senha", { 
         senha_atual: passwordForm.atual,
         nova_senha: passwordForm.nova 
@@ -76,7 +101,8 @@ export const ProfilePage = () => {
       setIsChangingPassword(false);
       setPasswordForm({ atual: "", nova: "", confirmar: "" });
     } catch (err: any) {
-      alert(err.response?.data?.error || "Erro ao alterar senha.");
+      console.error("Erro ao alterar senha:", err);
+      alert("Este servidor não permite mudanças de senha via app. Contacte o suporte ou use reset de senha por email.");
     } finally {
       setUpdateLoading(false);
     }
@@ -92,7 +118,7 @@ export const ProfilePage = () => {
   return (
     <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <header>
-        <Badge variant="info" className="mb-4 bg-vax-primary text-white border-none py-1.5 px-4 font-bold tracking-widest text-[10px]">VERIFICADO AGT</Badge>
+        <Badge variant="info" className="mb-4 bg-vax-primary text-white border-none py-1.5 px-4 font-bold tracking-widest text-[10px]">VERIFICADO</Badge>
         <h1 className="text-4xl font-bold text-vax-primary tracking-tight">Privacidade & Configurações</h1>
         <p className="text-slate-500 font-medium text-lg mt-1">Gerencie sua identidade digital e segurança na rede Vax.</p>
       </header>
