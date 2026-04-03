@@ -152,7 +152,7 @@ export const LoginPage = () => {
       
       <div className="absolute bottom-6 text-center w-full">
          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-           © 2026 vax Fintech. Conectando financiadores a causas sócias próximas.
+           © 2026 vax. Conectando financiadores a causas sócias próximas.
          </p>
       </div>
     </div>
