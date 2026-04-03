@@ -35,14 +35,12 @@ export const HistoryPage = () => {
           return;
         }
 
-        // 1. Buscar Doações enviadas pelo usuário
         const { data: doacoes } = await supabase
           .from('financiamento')
           .select(`id, valor, estado_pagamento, data_criacao, campanhas(id, titulo)`)
           .eq('usuario_id', user.id)
           .order('data_criacao', { ascending: false });
 
-        // 2. Buscar Recebimentos (financiamentos nas campanhas que o usuário criou)
         const { data: recebimentos } = await supabase
           .from('financiamento')
           .select(`id, valor, estado_pagamento, data_criacao, campanhas!inner(id, titulo, usuario_id)`)
@@ -50,7 +48,6 @@ export const HistoryPage = () => {
           .eq('estado_pagamento', 'concluido')
           .order('data_criacao', { ascending: false });
 
-        // Formatação unificada
         const transacoesDoacoes = (doacoes || []).map((d: any) => ({
           id: `doacao-${d.id}`,
           tipo: 'DOAÇÃO',
@@ -96,7 +93,7 @@ export const HistoryPage = () => {
   // Função de Exportação CSV
   const exportToCSV = () => {
     if (filtered.length === 0) return;
-    const headers = ["Tipo", "Projeto", "Valor (AKZ)", "Data", "Status"];
+    const headers = ["Tipo", "Projeto", "Valor (KZ)", "Data", "Status"];
     const rows = filtered.map(t => [
       t.tipo,
       t.projeto,
@@ -122,7 +119,7 @@ export const HistoryPage = () => {
       {/* HEADER */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <Badge variant="info" className="mb-4 bg-vax-primary text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">Extrato de Atividades</Badge>
+          <Badge variant="default" className="mb-4 bg-vax-primary text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">Extrato de Atividades</Badge>
           <h1 className="text-4xl font-bold text-vax-primary tracking-tight font-display">Histórico & Impacto</h1>
           <p className="text-slate-500 font-medium text-lg mt-1">Transparência total em suas doações e movimentações.</p>
         </div>
@@ -142,7 +139,7 @@ export const HistoryPage = () => {
         <Card className="p-6 border-vax-border/50 shadow-vax flex items-center justify-between bg-white">
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Doado</p>
-            <p className="text-2xl font-bold text-vax-primary">{totalDoacoes.toLocaleString()} <span className="text-xs opacity-60 font-medium">AKZ</span></p>
+            <p className="text-2xl font-bold text-vax-primary">{totalDoacoes.toLocaleString()} <span className="text-xs opacity-60 font-medium">KZ</span></p>
           </div>
           <div className="w-10 h-10 bg-vax-success-light text-vax-success-DEFAULT rounded-xl flex items-center justify-center">
             <ArrowDownRight className="w-5 h-5" />
@@ -152,7 +149,7 @@ export const HistoryPage = () => {
         <Card className="p-6 border-vax-border/50 shadow-vax flex items-center justify-between bg-white">
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Recebido</p>
-            <p className="text-2xl font-bold text-vax-primary">{totalRecebimentos.toLocaleString()} <span className="text-xs opacity-60 font-medium">AKZ</span></p>
+            <p className="text-2xl font-bold text-vax-primary">{totalRecebimentos.toLocaleString()} <span className="text-xs opacity-60 font-medium">KZ</span></p>
           </div>
           <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
             <ArrowUpRight className="w-5 h-5" />
@@ -162,7 +159,7 @@ export const HistoryPage = () => {
         <Card className="p-6 border-vax-border/50 shadow-vax flex items-center justify-between bg-white">
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Movimentação Total</p>
-            <p className="text-2xl font-bold text-vax-primary">{(totalDoacoes + totalRecebimentos).toLocaleString()} <span className="text-xs opacity-60 font-medium">AKZ</span></p>
+            <p className="text-2xl font-bold text-vax-primary">{(totalDoacoes + totalRecebimentos).toLocaleString()} <span className="text-xs opacity-60 font-medium">KZ</span></p>
           </div>
           <div className="w-10 h-10 bg-slate-100 text-slate-500 rounded-xl flex items-center justify-center">
             <TrendingUp className="w-5 h-5" />
@@ -243,7 +240,7 @@ export const HistoryPage = () => {
                     <td className={`px-8 py-6 font-bold text-base text-center tabular-nums ${
                       t.tipo === 'DOAÇÃO' ? 'text-vax-error-DEFAULT' : 'text-vax-success-DEFAULT'
                     }`}>
-                      {t.tipo === 'DOAÇÃO' ? '-' : '+'}{t.valor.toLocaleString()} <span className="text-[10px] opacity-70">AKZ</span>
+                      {t.tipo === 'DOAÇÃO' ? '-' : '+'}{t.valor.toLocaleString()} <span className="text-[10px] opacity-70">KZ</span>
                     </td>
                     <td className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
                       {new Date(t.data).toLocaleDateString()}

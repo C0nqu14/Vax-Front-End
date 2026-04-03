@@ -185,7 +185,7 @@ export const ExplorePage = () => {
         <p className="text-slate-500 text-2xl font-medium leading-relaxed max-w-2xl mx-auto">Descubra projetos reais validados pelo NIF e apoie o impacto local.</p>
       </header>
 
-      {/* Interface de Filtros de Segurança & Busca */}
+     
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-10">
           <div className="flex flex-wrap items-center gap-4 p-2 bg-vax-input rounded-[32px] border border-vax-border w-fit shadow-inner">
@@ -312,7 +312,6 @@ export const ExplorePage = () => {
           )}
         </AnimatePresence>
 
-        {/* Grid de Campanhas Reais */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 pt-20">
              {[...Array(6)].map((_, i) => (
@@ -354,8 +353,7 @@ const CampaignItem = ({ campaign }: any) => {
   console.log(` CampaignItem renderizado: "${campaign.titulo}" | categoria: ${campaign.categoria}`);
 
   return (
-    <Card className="group h-[560px] w-full flex flex-col border border-slate-100 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 rounded-2xl overflow-hidden bg-white">
-  {/* Imagem - 40% altura */}
+    <Card className="group h-300 w-full flex flex-col border border-slate-100 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 rounded-2xl overflow-hidden bg-white">
   <div className="h-72 relative">
     <img 
       src={campaign.imagem_url || "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&w=800&q=80"} 
@@ -375,7 +373,6 @@ const CampaignItem = ({ campaign }: any) => {
     </div>
   </div>
   
-  {/* Conteúdo - 60% altura */}
   <div className="flex-1 p-5 flex flex-col">
     {/* Info */}
     <div className="mb-4 space-y-2 flex-1">

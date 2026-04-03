@@ -32,7 +32,6 @@ export const DashboardPage = () => {
   };
 
   const normalizeCampaign = (c: any) => {
-    // Cálculo do valor real baseado no array de financiamentos (se existir)
     const financiamentosConcluidos = (c.financiamento || [])
       .filter((f: any) => f.estado_pagamento === 'concluido');
     
@@ -46,7 +45,7 @@ export const DashboardPage = () => {
       titulo: c.titulo || c.title || "Sem título",
       categoria: normalizarCategoria(c.categoria || ""),
       estado,
-      valor_arrecadado: valor_arrecadado_real, // Priorizamos o cálculo real
+      valor_arrecadado: valor_arrecadado_real, 
       valor_meta,
       financiamento: c.financiamento || [],
       imagem_url: c.imagem_url || "",
@@ -60,7 +59,6 @@ export const DashboardPage = () => {
         setLoading(true);
 
         if (isAdmin) {
-          // ADMIN: Busca global
           const { data: campanhasData, error: cpErr } = await supabase
             .from("campanhas")
             .select("*, financiamento(valor, estado_pagamento)")
@@ -81,7 +79,6 @@ export const DashboardPage = () => {
           });
 
         } else {
-          // USUÁRIO COMUM: Busca apenas dele com soma auditada
           const { data, error } = await supabase
             .from("campanhas")
             .select("*, financiamento(valor, estado_pagamento)")
@@ -134,7 +131,6 @@ export const DashboardPage = () => {
   );
 };
 
-// --- VISÃO DO UTILIZADOR ---
 const UserOverview = ({ campanhas, user, navigate }: any) => {
   const totalArrecadado = campanhas.reduce((acc: number, curr: any) => acc + curr.valor_arrecadado, 0);
   const totalMeta = campanhas.reduce((acc: number, curr: any) => acc + curr.valor_meta, 0);
@@ -146,7 +142,7 @@ const UserOverview = ({ campanhas, user, navigate }: any) => {
         <div className="flex items-center gap-5">
           <Avatar name={user?.nome_completo} src={user?.avatar_url} size="lg" className="hidden md:flex shadow-xl border-4 border-white" />
           <div className="space-y-2">
-            <Badge variant="info" className="bg-vax-primary text-white border-none text-[9px] uppercase font-bold tracking-widest px-3 py-1">
+            <Badge variant="default" className="bg-vax-primary text-white border-none text-[9px] uppercase font-bold tracking-widest px-3 py-1">
               CONTA VERIFICADA NIF
             </Badge>
             <h1 className="text-4xl font-bold text-vax-primary tracking-tighter">Olá, {firstName}!</h1>
@@ -166,7 +162,7 @@ const UserOverview = ({ campanhas, user, navigate }: any) => {
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <MetricCard label="Arrecadação Real" value={`${totalArrecadado.toLocaleString()} AKZ`} sub={`${totalMeta > 0 ? Math.round((totalArrecadado / totalMeta) * 100) : 0}% da meta global`} icon={<TrendingUp className="w-5 h-5 text-vax-success-DEFAULT" />} />
+        <MetricCard label="Arrecadação Real" value={`${totalArrecadado.toLocaleString()} KZ`} sub={`${totalMeta > 0 ? Math.round((totalArrecadado / totalMeta) * 100) : 0}% da meta global`} icon={<TrendingUp className="w-5 h-5 text-vax-success-DEFAULT" />} />
         <MetricCard label="Minhas Causas" value={campanhas.length.toString()} sub="Total cadastradas" icon={<Target className="w-5 h-5 text-vax-primary" />} />
         <MetricCard label="Apoios Confirmados" value={campanhas.reduce((acc: number, c: any) => acc + (c.financiamento?.filter((f: any) => f.estado_pagamento === 'concluido').length || 0), 0).toString()} sub="Transações liquidadas" icon={<Users className="w-5 h-5 text-amber-500" />} />
       </div>
@@ -190,7 +186,6 @@ const UserOverview = ({ campanhas, user, navigate }: any) => {
   );
 };
 
-// --- VISÃO DO ADMINISTRADOR ---
 const AdminOverview = ({ stats, campanhas, navigate }: any) => (
   <div className="space-y-8">
     <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-vax-border pb-6">
@@ -238,7 +233,6 @@ const AdminOverview = ({ stats, campanhas, navigate }: any) => (
   </div>
 );
 
-// --- COMPONENTES AUXILIARES ---
 const MetricCard = ({ label, value, sub, icon, warning }: any) => (
   <Card className={`p-5 bg-white shadow-sm border-vax-border/50 ${warning ? 'border-l-4 border-l-vax-error-DEFAULT' : ''}`}>
     <div className="flex items-center gap-3 mb-3">

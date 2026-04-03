@@ -33,7 +33,6 @@ export const UserProfilePage = () => {
       try {
         setLoading(true);
 
-        // Buscar todas as campanhas para encontrar as do usuário
         let allCampanhas: any[] = [];
         try {
           const campanhasRes = await api.get("/campanhas");
@@ -48,18 +47,14 @@ export const UserProfilePage = () => {
           allCampanhas = data || [];
         }
 
-        // Filtrar campanhas do usuário específico
         const userCampanhas = allCampanhas.filter((c: any) => c.usuario_id === id);
 
-        // Tentar obter dados do usuário de múltiplas fontes
         let userData = null;
         try {
-          // Primeiro tentar endpoint direto do usuário
           const userRes = await api.get(`/usuario/${id}`);
           userData = userRes.data;
         } catch (err1) {
           try {
-            // Tentar endpoint alternativo
             const userRes = await api.get(`/users/${id}`);
             userData = userRes.data;
           } catch (err2) {
@@ -147,7 +142,6 @@ export const UserProfilePage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
         <div className="lg:col-span-2 space-y-12">
-          {/* Header do Perfil */}
           <div className="space-y-8">
             <div className="flex items-center gap-6">
               <Avatar name={user?.nome_completo} size="xl" className="border-4 border-white shadow-xl" />
@@ -165,7 +159,6 @@ export const UserProfilePage = () => {
             </div>
           </div>
 
-          {/* Estatísticas */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <Card className="p-6 text-center bg-gradient-to-br from-vax-primary/10 to-vax-primary/5 border-vax-primary/20">
               <TrendingUp className="w-8 h-8 text-vax-primary mx-auto mb-3" />
@@ -189,7 +182,6 @@ export const UserProfilePage = () => {
             </Card>
           </div>
 
-          {/* Projetos do Usuário */}
           <div className="space-y-8">
             <h3 className="text-2xl font-bold text-vax-primary flex items-center gap-4">
               <Target className="w-6 h-6" /> Projetos de {user?.nome_completo?.split(' ')[0] || 'Este usuário'}
@@ -255,7 +247,6 @@ export const UserProfilePage = () => {
         </div>
 
         <div className="space-y-8">
-          {/* Informações de Segurança */}
           <Card className="p-8 bg-gradient-to-br from-vax-primary/5 to-vax-success-DEFAULT/5 border-vax-primary/20">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-vax-primary/10 rounded-2xl flex items-center justify-center">
@@ -286,7 +277,6 @@ export const UserProfilePage = () => {
             </div>
           </Card>
 
-          {/* Progresso Geral */}
           <Card className="p-8">
             <h4 className="font-bold text-vax-primary text-lg mb-6">Impacto Geral</h4>
             <div className="space-y-4">

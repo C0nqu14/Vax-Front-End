@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ShieldCheck, AlertCircle, Mail, Loader2, User, Lock, Fingerprint, CheckCircle2, ArrowRight } from "lucide-react";
+import { ShieldCheck, AlertCircle, Mail, Loader2, User, Lock, Fingerprint, CheckCircle2, ArrowRight, Check, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../services/api";
 import { Button } from "../components/ui/Button";
@@ -13,22 +13,39 @@ export const RegisterPage = () => {
   const [email, setEmail] = useState("");
   const [nif, setNif] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState(""); // Adicionado para experiência de usuário
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // NIF Validation states
   const [nifData, setNifData] = useState<any>(null);
   const [isValidatingNif, setIsValidatingNif] = useState(false);
   const [nifError, setNifError] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
-  // Helper to normalize strings for comparison
+  // --- LÓGICA DE SENHA FORTE (ESTILO SITES FAMOSOS) ---
+  const requirements = useMemo(() => [
+    { label: "8+ Caracteres", met: password.length >= 8 },
+    { label: "Letra Maiúscula", met: /[A-Z]/.test(password) },
+    { label: "Número", met: /[0-9]/.test(password) },
+    { label: "Símbolo (@#$%)", met: /[^A-Za-z0-9]/.test(password) },
+  ], [password]);
+
+  const strength = useMemo(() => {
+    const metCount = requirements.filter(r => r.met).length;
+    if (password.length === 0) return { label: "Inexistente", color: "bg-slate-100", text: "text-slate-400", width: "5%" };
+    if (metCount <= 2) return { label: "Fraca", color: "bg-red-500", text: "text-red-500", width: "33%" };
+    if (metCount === 3) return { label: "Média", color: "bg-orange-400", text: "text-orange-400", width: "66%" };
+    return { label: "Forte", color: "bg-green-500", text: "text-green-500", width: "100%" };
+  }, [requirements, password]);
+
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
+  const showMismatchWarning = confirmPassword.length > 0 && password !== confirmPassword;
+
   const normalize = (str: string) =>
     str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
-  // Real-time NIF Validation via vaquinha.ao/nif
   useEffect(() => {
     const validateNIF = async () => {
       if (nif.length < 9) {
@@ -47,7 +64,6 @@ export const RegisterPage = () => {
           if (data.success && data.data) {
             setNifData(data.data);
 
-            // Anti-fraud: Immediate feedback if name doesn't match
             if (nome.trim().length > 5) {
                const apiWords = normalize(data.data.nome).split(/\s+/);
                const inputWords = normalize(nome).split(/\s+/);
@@ -81,6 +97,16 @@ export const RegisterPage = () => {
     e.preventDefault();
     setError(null);
 
+    if (password !== confirmPassword) {
+      setError("As senhas digitadas não são iguais.");
+      return;
+    }
+
+    if (strength.label !== "Forte") {
+      setError("Aumente a segurança da sua senha antes de prosseguir.");
+      return;
+    }
+
     if (nifError) {
       setError(nifError);
       return;
@@ -107,7 +133,6 @@ export const RegisterPage = () => {
 
   return (
     <div className="min-h-screen w-full flex bg-vax-bg items-center justify-center p-4 relative overflow-hidden">
-      {/* Auth Branding Header */}
       <div className="absolute top-0 left-0 w-full p-8 flex justify-between items-center bg-white border-b border-vax-border z-10 transition-all">
          <div className="flex items-center gap-3">
             <img src={logo} alt="VAX" className="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
@@ -131,7 +156,7 @@ export const RegisterPage = () => {
 
         <div className="bg-white rounded-[40px] border border-vax-border shadow-2xl shadow-vax-primary/5 p-8 md:p-12 relative overflow-hidden">
           <AnimatePresence>
-            {error && (
+            {(error || showMismatchWarning) && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -139,7 +164,7 @@ export const RegisterPage = () => {
                 className="mb-8 bg-vax-error-light border border-vax-error-DEFAULT/20 p-4 rounded-2xl text-vax-error-DEFAULT text-sm font-bold flex items-center gap-3"
               >
                 <AlertCircle className="w-5 h-5 shrink-0" />
-                {error}
+                {showMismatchWarning ? "As senhas não coincidem" : error}
               </motion.div>
             )}
 
@@ -185,7 +210,6 @@ export const RegisterPage = () => {
                     rightIcon={isValidatingNif ? <Loader2 className="w-4 h-4 animate-spin text-vax-primary" /> : null}
                   />
 
-                  {/* NIF Status Micro-feedback */}
                   <AnimatePresence>
                     {nifData && !nifError && (
                       <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="absolute -bottom-6 left-2 flex items-center gap-1">
@@ -215,21 +239,68 @@ export const RegisterPage = () => {
               leftIcon={<Mail className="w-4 h-4" />}
             />
 
-            <Input
-              label="Senha de Acesso"
+            {/* SEÇÃO DE SENHA E STATUS VISUAL */}
+            <div className="space-y-3">
+              <Input
+                label="Senha de Acesso"
+                type="password"
+                placeholder="Mínimo 8 caracteres"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                leftIcon={<Lock className="w-4 h-4" />}
+              />
+              
+              {password.length > 0 && (
+                <div className="px-1 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className={`text-[10px] font-black uppercase tracking-tighter ${strength.text}`}>Senha {strength.label}</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{strength.width} segura</span>
+                  </div>
+                  
+                  {/* Barra de Status Dinâmica */}
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: strength.width }}
+                      className={`h-full transition-all duration-500 ${strength.color}`} 
+                    />
+                  </div>
+
+                  {/* Checklist de Requisitos */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {requirements.map((req, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        {req.met ? <Check className="w-3 h-3 text-green-500" /> : <X className="w-3 h-3 text-slate-300" />}
+                        <span className={`text-[9px] font-bold uppercase ${req.met ? "text-green-600" : "text-slate-400"}`}>
+                          {req.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+             <Input
+              label="Confirmação de Senha"
               type="password"
-              placeholder="Mínimo 8 caracteres"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Digite a mesma senha"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              leftIcon={<Lock className="w-4 h-4" />}
+              leftIcon={<ShieldCheck className={`w-4 h-4 ${passwordsMatch ? "text-green-500" : ""}`} />}
+              className={showMismatchWarning ? "border-red-500 focus:ring-red-100" : passwordsMatch ? "border-green-500" : ""}
             />
 
+            <div className="text-[9px] font-bold text-vax-primary uppercase">
+              Ao tocares em Finalizar Ativação, aceitas a criação de uma conta e os <Link to="/termos" className="text-vax-primary hover:underline">Termos de Serviço</Link>, a <Link to="/politica-privacidade" className="text-vax-primary hover:underline">Política de Privacidade</Link> e a <Link to="/politica-taxas" className="text-vax-primary hover:underline">Política de Taxas</Link> da Vax.
+            </div>
             <Button
               type="submit"
               className="w-full h-11 text-xs font-black shadow-xl shadow-vax-primary/20 group uppercase tracking-[0.2em] rounded-full"
               isLoading={loading}
-              disabled={success || isValidatingNif || !!nifError}
+              disabled={success || isValidatingNif || !!nifError || strength.label !== "Forte" || !passwordsMatch}
               rightIcon={<ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />}
             >
               Finalizar Ativação
@@ -237,7 +308,6 @@ export const RegisterPage = () => {
           </form>
         </div>
 
-        {/* Security badges */}
         <div className="mt-12 flex justify-center items-center gap-6 opacity-30">
            {["Criptografia Ponta-a-Ponta", "Conformidade AGT", "Proteção de Dados"].map((text, i) => (
              <div key={i} className="flex items-center gap-2 text-[9px] font-bold text-vax-primary uppercase tracking-[0.15em] whitespace-nowrap">

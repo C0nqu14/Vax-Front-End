@@ -16,6 +16,9 @@ import { ProfilePage } from './pages/ProfilePage';
 import { MyCampaignsPage } from './pages/MyCampaignsPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { AppLayout } from './components/AppLayout';
+import { Termos } from './pages/termos/Termos';
+import { PoliticaPrivacidade } from './pages/termos/PoliticaPrivacidade';
+import { PoliticaTaxas } from './pages/termos/PoliticaTaxas';
 
 function App() {
   return (
@@ -25,8 +28,11 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/termos" element={<Termos />} />
+          <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+          <Route path="/politica-taxas" element={<PoliticaTaxas />} />
+          
 
-          {/* Rotas Protegidas com Layout Consistente */}
           <Route element={<AppLayout />}>
             <Route path="/explorar" element={<ExplorePage />} />
             <Route path="/dashboard" element={<DashboardPage />} />

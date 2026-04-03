@@ -27,26 +27,22 @@ export const LoginPage = () => {
       const token = response.data.token;
       const user = response.data.user;
 
-      // Guardar token imediatamente para que o próximo pedido seja autenticado
       localStorage.setItem("vax_token", token);
 
-      // --- VERIFICAÇÃO DE ADMIN SEGURA (Backend-driven) ---
-      // Testamos um endpoint exclusivo de admin. O servidor decide quem tem acesso.
-      // Se responder 200 → is_admin: true. Se 403 → utilizador normal.
       let isAdminUser = false;
       try {
         await api.get("/admin/usuarios");
-        isAdminUser = true; // Só chega aqui se o backend autorizou
+        isAdminUser = true; 
       } catch {
-        isAdminUser = false; // 403 Forbidden → não é admin
+        isAdminUser = false; 
       }
 
-      // Guardar utilizador com flag de admin definida pelo próprio servidor
+      
       localStorage.setItem("vax_user", JSON.stringify({ ...user, is_admin: isAdminUser }));
 
       navigate("/dashboard");
     } catch (err: any) {
-      // Limpar token se o login falhou
+     
       localStorage.removeItem("vax_token");
       setError(err.response?.data?.error || "Nome ou senha incorretos.");
     } finally {
@@ -56,7 +52,7 @@ export const LoginPage = () => {
 
   return (
     <div className="min-h-screen w-full flex bg-vax-bg items-center justify-center p-4 relative overflow-hidden">
-      {/* Header Logo purely for Auth */}
+     
       <div className="absolute top-0 left-0 w-full p-10 flex justify-between items-center bg-white border-b border-vax-border z-10 h-28 sm:h-32">
           <div className="flex items-center justify-center w-full">
              <img src={logo} alt="Vax Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
@@ -162,4 +158,3 @@ export const LoginPage = () => {
     </div>
   );
 };
-

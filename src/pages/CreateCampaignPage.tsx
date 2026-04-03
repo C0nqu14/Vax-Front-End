@@ -272,7 +272,7 @@ export const CreateCampaignPage = () => {
                      
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <Input 
-                          label="Meta de Arrecadação (AKZ)"
+                          label="Meta de Arrecadação (KZ)"
                           type="number"
                           placeholder="0.00"
                           value={valorMeta}
@@ -373,7 +373,6 @@ export const CreateCampaignPage = () => {
           </AnimatePresence>
         </div>
 
-        {/* Wizard Navigation Panel */}
         <div className="mt-12 pt-8 border-t border-vax-border flex items-center justify-between">
             <button 
               onClick={prevStep}

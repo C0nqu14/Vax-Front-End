@@ -52,7 +52,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   return (
     <>
-      {/* Overlay mobile */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/20 z-[59] lg:hidden"
@@ -65,7 +64,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-0
         ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}
       `}>
-        {/* Brand Logo */}
         <div className="p-6 pb-4 flex items-center justify-center relative border-b border-vax-border">
           <Link to="/dashboard" className="flex items-center">
             <img src={logo} alt="Vax Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
@@ -78,7 +76,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           </button>
         </div>
 
-        {/* User Profile Card */}
         <div className="px-4 py-4">
           <div className="p-3 bg-vax-input/60 rounded-2xl border border-vax-border">
             <div className="flex items-center gap-3">
@@ -101,7 +98,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 px-2 overflow-y-auto pb-4" onClick={onClose}>
           <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Geral</div>
           
@@ -133,7 +129,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           <NavItem icon={User} label="Meu Perfil" to="/perfil" active={location.pathname === "/perfil"} />
         </nav>
 
-        {/* Logout */}
         <div className="p-4 border-t border-vax-border">
           <button 
             onClick={logout}

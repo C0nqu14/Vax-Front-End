@@ -190,7 +190,7 @@ export const AdminReportsPage = () => {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-         <MetricPanel label="Volume Auditado" value={`${stats.total_arrecadado.toLocaleString()} AKZ`} icon={<TrendingUp className="w-6 h-6 text-vax-success-DEFAULT" />} />
+         <MetricPanel label="Volume Auditado" value={`${stats.total_arrecadado.toLocaleString()} KZ`} icon={<TrendingUp className="w-6 h-6 text-vax-success-DEFAULT" />} />
          <MetricPanel label="Denúncias Pendentes" value={denuncias.filter(d => d.estado === 'pendente').length.toString()} icon={<AlertTriangle className="w-6 h-6 text-vax-error-DEFAULT" />} warning={denuncias.filter(d => d.estado === 'pendente').length > 0} />
          <MetricPanel label="Utilizadores Validadores" value={stats.usuarios_ativos.toString()} icon={<Users className="w-6 h-6 text-vax-primary" />} />
          <MetricPanel label="Causas em Operação" value={stats.campanhas_ativas.toString()} icon={<Target className="w-6 h-6 text-amber-500" />} />

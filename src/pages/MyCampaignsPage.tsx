@@ -37,7 +37,6 @@ export const MyCampaignsPage = () => {
 
         if (!user?.id) return;
 
-        // Buscamos as campanhas com o JOIN dos financiamentos para soma real
         const { data: supaData, error: supaError } = await supabase
           .from("campanhas")
           .select(`
@@ -52,9 +51,7 @@ export const MyCampaignsPage = () => {
 
         if (supaError) throw supaError;
 
-        // Processamento e Normalização (Cálculo da Arrecadação Real)
         const normalized = (supaData || []).map((c: any) => {
-          // Filtramos apenas pagamentos concluídos para a soma real
           const financiamentosValidos = (c.financiamento || [])
             .filter((f: any) => f.estado_pagamento === 'concluido' || f.estado_pagamento === 'sucesso');
           
@@ -64,7 +61,7 @@ export const MyCampaignsPage = () => {
             ...c,
             categoria: normalizarCategoria(c.categoria || ""),
             estado: (c.estado || "pendente").toString().toLowerCase(),
-            valor_arrecadado: somaReal, // Substituímos o valor estático pelo real auditado
+            valor_arrecadado: somaReal, 
             contagem_apoios: financiamentosValidos.length
           };
         });
@@ -81,7 +78,7 @@ export const MyCampaignsPage = () => {
     if (user) fetchMyCampaigns();
   }, [user]);
 
-  // Cálculos de Totais para os Stats
+
   const totalArrecadado = campanhas.reduce((acc, curr) => acc + curr.valor_arrecadado, 0);
   const totalMeta = campanhas.reduce((acc, curr) => acc + (Number(curr.valor_meta) || 0), 0);
   
@@ -124,7 +121,6 @@ export const MyCampaignsPage = () => {
         </Button>
       </header>
 
-      {/* Stats Summary Panel */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatSummary 
           label="Total Arrecadado" 
@@ -246,7 +242,7 @@ const CampaignManagementRow = ({ campaign, onClick }: any) => {
               
               <div className="xl:text-right bg-vax-input/40 p-4 rounded-3xl border border-vax-border px-8">
                  <span className="block text-3xl font-bold text-vax-primary leading-none tabular-nums">
-                    {campaign.valor_arrecadado.toLocaleString()} <span className="text-sm font-medium opacity-30">AKZ</span>
+                    {campaign.valor_arrecadado.toLocaleString()} <span className="text-sm font-medium opacity-30">KZ</span>
                  </span>
                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 block">Auditado Real</span>
               </div>
@@ -269,7 +265,7 @@ const CampaignManagementRow = ({ campaign, onClick }: any) => {
               </div>
               <div className="flex flex-wrap justify-between items-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-vax-border/50">META: {Number(campaign.valor_meta).toLocaleString()} AKZ</span>
+                    <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-vax-border/50">META: {Number(campaign.valor_meta).toLocaleString()} KZ</span>
                     <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-vax-border/50">{campaign.contagem_apoios} APOIOS</span>
                  </div>
                  <span className="flex items-center gap-2 text-vax-primary group-hover:translate-x-1 transition-transform">PAINEL DE GESTÃO <ChevronRight className="w-4 h-4" /></span>

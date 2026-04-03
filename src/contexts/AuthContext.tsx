@@ -37,11 +37,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const parsedUser = JSON.parse(userStr);
       setUser(parsedUser);
 
-      // Verificação de Admin sempre via back-end (fonte de verdade = servidor)
+    
       try {
         await api.get('/admin/usuarios');
         setIsAdmin(true);
-        // Sincronizar localStorage se necessário
+       
         if (!parsedUser.is_admin) {
           const updated = { ...parsedUser, is_admin: true };
           localStorage.setItem('vax_user', JSON.stringify(updated));

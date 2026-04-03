@@ -91,8 +91,6 @@ export const ProfilePage = () => {
     }
     setUpdateLoading(true);
     try {
-      // Nota: PUT /usuario/senha pode não existir no backend
-      // Se falhar, mostrar que senha só pode ser alterada via back-end ou reset
       await api.put("/usuario/senha", { 
         senha_atual: passwordForm.atual,
         nova_senha: passwordForm.nova 
@@ -118,7 +116,7 @@ export const ProfilePage = () => {
   return (
     <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <header>
-        <Badge variant="info" className="mb-4 bg-vax-primary text-white border-none py-1.5 px-4 font-bold tracking-widest text-[10px]">VERIFICADO</Badge>
+        <Badge variant="default" className="mb-4 bg-vax-primary text-white border-none py-1.5 px-4 font-bold tracking-widest text-[10px]">VERIFICADO</Badge>
         <h1 className="text-4xl font-bold text-vax-primary tracking-tight">Privacidade & Configurações</h1>
         <p className="text-slate-500 font-medium text-lg mt-1">Gerencie sua identidade digital e segurança na rede Vax.</p>
       </header>
@@ -144,7 +142,7 @@ export const ProfilePage = () => {
             <h2 className="text-2xl font-bold text-vax-primary mb-1 tracking-tight">{user.nome_completo || "Usuário Vax"}</h2>
             <div className="flex items-center gap-2 mb-8">
                <Badge variant="neutral" className="uppercase tracking-[0.15em] text-[8px] font-bold bg-vax-input text-slate-500 border-none px-3">
-                  {(user.tipo || user.role) === 'admin' ? 'Administrador do Sistema' : 'Mobilizador Social'}
+                  {(user.tipo || user.role) === 'admin' ? 'Administrador do Sistema' : 'Utilizador'}
                </Badge>
             </div>
 

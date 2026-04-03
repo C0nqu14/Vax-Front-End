@@ -19,7 +19,6 @@ export const CampaignDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // States originais mantidos
   const [campanha, setCampanha] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [donateLoading, setDonateLoading] = useState(false);
@@ -28,7 +27,6 @@ export const CampaignDetailPage = () => {
   const [activeTab, setActiveTab] = useState("sobre");
   const [user, setUser] = useState<any>(null);
   
-  // Denúncia states mantidos
   const [isReporting, setIsReporting] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportLoading, setReportLoading] = useState(false);
@@ -42,8 +40,6 @@ export const CampaignDetailPage = () => {
       try {
         setLoading(true);
         
-        // QUERY DIRETA: Substitui o api.get para resolver o bug de relacionamento
-        // Usa as chaves estrangeiras exatas do teu SQL
         const { data, error: sbError } = await supabase
           .from('campanhas')
           .select(`
@@ -157,7 +153,6 @@ export const CampaignDetailPage = () => {
     </div>
   );
 
-  // Lógica de cálculos baseada no teu SQL
   const financiamentoConcluido = (campanha.financiamento || []).filter((f: any) => f.estado_pagamento === 'concluido');
   const realArrecadado = financiamentoConcluido.reduce((acc: number, curr: any) => acc + (Number(curr.valor) || 0), 0);
   const percentage = Math.min((realArrecadado / (Number(campanha.valor_meta) || 1)) * 100, 100);

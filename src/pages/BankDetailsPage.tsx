@@ -97,7 +97,7 @@ export const BankDetailsPage = () => {
     <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <Badge variant="info" className="mb-4">SEGURANÇA FINANCEIRA</Badge>
+          <Badge variant="default" className="mb-4">SEGURANÇA FINANCEIRA</Badge>
           <h1 className="text-4xl font-bold text-vax-primary tracking-tight">Dados Bancários</h1>
           <p className="text-slate-500 font-medium text-lg mt-1">Configure sua conta para recebimento de apoios e doações.</p>
         </div>

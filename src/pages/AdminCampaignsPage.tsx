@@ -29,7 +29,7 @@ export const AdminCampaignsPage = () => {
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
-      // GET /campanhas — retorna todas as campanhas do banco SQL
+    
       let campanhasData: any[] = [];
       try {
         const response = await api.get("/admin/campanhas");
@@ -58,8 +58,7 @@ export const AdminCampaignsPage = () => {
   const updateCampaignStatus = async (id: string, newStatus: string) => {
     try {
       setActionLoading(id);
-      // PATCH/POST /admin/campanhas/:id/avaliar — atualiza estado no SQL
-      // Tentar primeiro com 'estado', se falhar tentar com 'status'
+      
       try {
         await api.post(`/admin/campanhas/${id}/avaliar`, { estado: newStatus });
       } catch (error: any) {
@@ -75,7 +74,6 @@ export const AdminCampaignsPage = () => {
         }
       }
 
-      // Se ainda falhar, tentar atualizar no Supabase como último recurso (apenas para sincronização local)
       try {
         const { error } = await supabase
           .from('campanhas')
@@ -114,7 +112,7 @@ export const AdminCampaignsPage = () => {
     return matchTab && matchSearch;
   });
 
-  // Métricas dinâmicas do banco
+ 
   const totalArrecadado = campanhas.reduce((acc, c) => acc + (Number(c.valor_arrecadado) || 0), 0);
   const ativas = campanhas.filter(c => c.estado === 'ativa').length;
   const suspensas = campanhas.filter(c => c.estado === 'suspensa').length;
@@ -183,14 +181,12 @@ export const AdminCampaignsPage = () => {
         </Button>
       </header>
 
-      {/* Métricas reais do banco */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <MetricCard label="Campanhas Ativas" value={ativas.toString()} icon={<CheckCircle2 className="w-5 h-5 text-vax-success-DEFAULT" />} />
         <MetricCard label="Campanhas Suspensas" value={suspensas.toString()} icon={<Clock className="w-5 h-5 text-amber-500" />} warning={suspensas > 0} />
         <MetricCard label="Campanhas Falhadas" value={falhadas.toString()} icon={<XCircle className="w-5 h-5 text-vax-error-DEFAULT" />} warning={falhadas > 0} />
       </div>
 
-      {/* Filtros */}
       <div className="flex flex-col lg:flex-row lg:items-center gap-4">
         <div className="flex bg-vax-input/60 p-1 rounded-xl border border-vax-border overflow-x-auto gap-1">
           {tabs.map(tab => (
@@ -219,7 +215,6 @@ export const AdminCampaignsPage = () => {
         </div>
       </div>
 
-      {/* Tabela de campanhas */}
       <Card className="overflow-hidden border-vax-border shadow-sm rounded-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -273,7 +268,6 @@ export const AdminCampaignsPage = () => {
                       </td>
                       <td className="px-6 py-5 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {/* Ver campanha */}
                           <button
                             onClick={() => navigate(`/campanhas/${c.id}`)}
                             className="p-2 bg-vax-input border border-vax-border rounded-lg text-slate-400 hover:text-vax-primary hover:bg-white transition-all"
@@ -282,7 +276,6 @@ export const AdminCampaignsPage = () => {
                             <ExternalLink className="w-4 h-4" />
                           </button>
 
-                          {/* Aprovar (pendente → ativa) */}
                           {(c.estado === 'pendente' || c.estado === 'em_aprovacao') && (
                             <button
                               onClick={() => updateCampaignStatus(c.id, 'ativa')}
@@ -294,7 +287,6 @@ export const AdminCampaignsPage = () => {
                             </button>
                           )}
 
-                          {/* Suspender (ativa → suspensa) */}
                           {c.estado === 'ativa' && (
                             <button
                               onClick={() => updateCampaignStatus(c.id, 'suspensa')}
@@ -306,7 +298,6 @@ export const AdminCampaignsPage = () => {
                             </button>
                           )}
 
-                          {/* Reativar (suspensa → ativa) */}
                           {c.estado === 'suspensa' && (
                             <button
                               onClick={() => updateCampaignStatus(c.id, 'ativa')}
@@ -318,7 +309,6 @@ export const AdminCampaignsPage = () => {
                             </button>
                           )}
 
-                          {/* Banir permanentemente (apenas de suspensa ou ativa) */}
                           {(c.estado === 'suspensa' || c.estado === 'ativa' || c.estado === 'pendente') && (
                             <button
                               onClick={() => {

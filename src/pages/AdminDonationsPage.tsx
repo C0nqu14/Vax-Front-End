@@ -27,8 +27,6 @@ export const AdminDonationsPage = () => {
       try {
         setLoading(true);
         
-        // Busca relacional direta no Supabase para pegar TUDO (Histórico Financeiro completo)
-        // Puxamos os dados das tabelas relacionadas 'usuarios' e 'campanhas' via Join
         const { data, error } = await supabase
           .from("financiamento")
           .select(`
@@ -46,7 +44,6 @@ export const AdminDonationsPage = () => {
 
         if (error) throw error;
 
-        // Mapeamento para manter compatibilidade com o seu layout original
         const doacoesFormatadas = (data || []).map((f: any) => ({
           ...f,
           usuarios: { 
@@ -132,7 +129,7 @@ export const AdminDonationsPage = () => {
       {/* Métricas Financeiras Dinâmicas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
          <StatCard label="Volume Bruto Auditado" value={`${totalVolume.toLocaleString()} KZ`} icon={<TrendingUp className="w-6 h-6 text-vax-success-DEFAULT" />} />
-         <StatCard label="Ticket Médio Mobilizado" value={`${Math.round(avgDonation).toLocaleString()} AKZ`} icon={<HistoryIcon className="w-6 h-6 text-vax-primary" />} />
+         <StatCard label="Ticket Médio Mobilizado" value={`${Math.round(avgDonation).toLocaleString()} KZ`} icon={<HistoryIcon className="w-6 h-6 text-vax-primary" />} />
          <StatCard label="Transações Confirmadas" value={concludedDonations.length.toString()} icon={<CheckCircle2 className="w-6 h-6 text-vax-success-DEFAULT" />} />
       </div>
 
@@ -178,7 +175,7 @@ export const AdminDonationsPage = () => {
                               {d.usuarios?.nome_completo?.charAt(0) || "D"}
                            </div>
                            <div>
-                              <span className="block font-bold text-vax-primary text-lg tracking-tighter leading-none">{d.usuarios?.nome_completo || "Mobilizador Vax"}</span>
+                              <span className="block font-bold text-vax-primary text-lg tracking-tighter leading-none">{d.usuarios?.nome_completo || "Utilizador Vax"}</span>
                               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
                                  ID: {d.id_transacao || d.id?.split('-')[0]}
                               </span>
