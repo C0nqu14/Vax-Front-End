@@ -163,7 +163,7 @@ export const HomePage = () => {
         <div className="pointer-events-none relative z-10 mx-auto flex min-h-[560px] max-w-7xl items-center px-5 sm:min-h-[640px] sm:px-8">
           <div className="pointer-events-auto max-w-2xl py-16">
             <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
-              Ideias locais merecem apoio coletivo.
+              Causas locais merecem apoio coletivo.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-white/90">
               A Vax é a plataforma onde as pessoas apresentam as suas causas e
