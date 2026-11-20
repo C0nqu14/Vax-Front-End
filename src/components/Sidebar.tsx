@@ -14,7 +14,7 @@ import {
   PlusCircle,
   History
 } from "lucide-react";
-import logo from "../../assets/vax-logo.png";
+import logo from "../../assets/vax-logo-transparent.png";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar } from "./ui/Avatar";
 import { useAuth } from "../contexts/AuthContext";
@@ -65,8 +65,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}
       `}>
         <div className="p-6 pb-4 flex items-center justify-center relative border-b border-vax-border">
-          <Link to="/dashboard" className="flex items-center">
-            <img src={logo} alt="Vax Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
+          <Link to="/" aria-label="Vax, página inicial" onClick={onClose} className="flex items-center">
+            <img src={logo} alt="Vax Logo" className="h-8 w-auto object-contain sm:h-9" />
           </Link>
           <button 
             onClick={onClose}

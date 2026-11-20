@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, AlertCircle, HelpCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../services/api";
-import logo from "../../assets/vax-logo.png";
+import logo from "../../assets/vax-logo-transparent.png";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 
@@ -55,7 +55,9 @@ export const LoginPage = () => {
      
       <div className="absolute top-0 left-0 w-full p-10 flex justify-between items-center bg-white border-b border-vax-border z-10 h-28 sm:h-32">
           <div className="flex items-center justify-center w-full">
-             <img src={logo} alt="Vax Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
+             <Link to="/" aria-label="Vax, página inicial">
+               <img src={logo} alt="Vax Logo" className="h-8 w-auto object-contain sm:h-9" />
+             </Link>
           </div>
       </div>
 

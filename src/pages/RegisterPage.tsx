@@ -6,7 +6,7 @@ import api from "../services/api";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
-import logo from "../../assets/vax-logo.png";
+import logo from "../../assets/vax-logo-transparent.png";
 
 export const RegisterPage = () => {
   const [nome, setNome] = useState("");
@@ -135,7 +135,9 @@ export const RegisterPage = () => {
     <div className="min-h-screen w-full flex bg-vax-bg items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full p-8 flex justify-between items-center bg-white border-b border-vax-border z-10 transition-all">
          <div className="flex items-center gap-3">
-            <img src={logo} alt="VAX" className="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
+            <Link to="/" aria-label="Vax, página inicial">
+              <img src={logo} alt="VAX" className="h-8 w-auto object-contain sm:h-9" />
+            </Link>
          </div>
          <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-slate-400 hidden sm:block">Já possui acesso?</span>
