@@ -142,7 +142,7 @@ const UserOverview = ({ campanhas, user, navigate }: any) => {
         <div className="flex items-center gap-5">
           <Avatar name={user?.nome_completo} src={user?.avatar_url} size="lg" className="hidden md:flex shadow-xl border-4 border-white" />
           <div className="space-y-2">
-            <Badge variant="default" className="bg-vax-primary text-white border-none text-[9px] uppercase font-bold tracking-widest px-3 py-1">
+            <Badge variant="neutral" className="bg-vax-primary text-white border-none text-[9px] uppercase font-bold tracking-widest px-3 py-1">
               CONTA VERIFICADA NIF
             </Badge>
             <h1 className="text-4xl font-bold text-vax-primary tracking-tighter">Olá, {firstName}!</h1>

@@ -116,7 +116,7 @@ export const ProfilePage = () => {
   return (
     <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <header>
-        <Badge variant="default" className="mb-4 bg-vax-primary text-white border-none py-1.5 px-4 font-bold tracking-widest text-[10px]">VERIFICADO</Badge>
+        <Badge variant="neutral" className="mb-4 bg-vax-primary text-white border-none py-1.5 px-4 font-bold tracking-widest text-[10px]">VERIFICADO</Badge>
         <h1 className="text-4xl font-bold text-vax-primary tracking-tight">Privacidade & Configurações</h1>
         <p className="text-slate-500 font-medium text-lg mt-1">Gerencie sua identidade digital e segurança na rede Vax.</p>
       </header>

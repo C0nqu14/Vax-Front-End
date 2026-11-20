@@ -119,7 +119,7 @@ export const HistoryPage = () => {
       {/* HEADER */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <Badge variant="default" className="mb-4 bg-vax-primary text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">Extrato de Atividades</Badge>
+          <Badge variant="neutral" className="mb-4 bg-vax-primary text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">Extrato de Atividades</Badge>
           <h1 className="text-4xl font-bold text-vax-primary tracking-tight font-display">Histórico & Impacto</h1>
           <p className="text-slate-500 font-medium text-lg mt-1">Transparência total em suas doações e movimentações.</p>
         </div>
